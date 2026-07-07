@@ -29,18 +29,22 @@ trait SPG_Security {
 
 	/**
 	 * Encrypt a string using AES-256-CBC.
-	 * Falls back to base64 when openssl is unavailable (not recommended for production).
+	 * Requires the OpenSSL PHP extension. An exception is thrown when it is
+	 * unavailable so callers are not given a false sense of security.
 	 *
 	 * @param string $plaintext String to encrypt.
 	 * @return string Encrypted string (IV prepended, base64-encoded).
+	 * @throws RuntimeException When OpenSSL is not available.
 	 */
 	protected function encrypt( $plaintext ) {
-		$key = $this->get_encryption_key();
-
 		if ( ! function_exists( 'openssl_encrypt' ) ) {
-			return base64_encode( $plaintext ); // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_encode
+			throw new RuntimeException(
+				'OpenSSL PHP extension is required for credential encryption. ' .
+				'Please enable ext-openssl on your server.'
+			);
 		}
 
+		$key       = $this->get_encryption_key();
 		$iv        = openssl_random_pseudo_bytes( 16 );
 		$encrypted = openssl_encrypt( $plaintext, 'AES-256-CBC', $key, 0, $iv );
 
@@ -52,14 +56,17 @@ trait SPG_Security {
 	 *
 	 * @param string $ciphertext Base64-encoded ciphertext (IV prepended).
 	 * @return string|false Decrypted string or false on failure.
+	 * @throws RuntimeException When OpenSSL is not available.
 	 */
 	protected function decrypt( $ciphertext ) {
-		$key = $this->get_encryption_key();
-
 		if ( ! function_exists( 'openssl_decrypt' ) ) {
-			return base64_decode( $ciphertext ); // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_decode
+			throw new RuntimeException(
+				'OpenSSL PHP extension is required for credential decryption. ' .
+				'Please enable ext-openssl on your server.'
+			);
 		}
 
+		$key       = $this->get_encryption_key();
 		$raw       = base64_decode( $ciphertext ); // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_decode
 		$iv        = substr( $raw, 0, 16 );
 		$encrypted = substr( $raw, 16 );

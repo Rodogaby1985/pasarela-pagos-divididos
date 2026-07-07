@@ -207,14 +207,18 @@ final class Split_Payment_Gateway_Plugin {
 			'spg-modal-js',
 			'spgData',
 			array(
-				'ajaxUrl'   => admin_url( 'admin-ajax.php' ),
-				'restUrl'   => rest_url( 'spg/v1/' ),
-				'nonce'     => wp_create_nonce( 'wp_rest' ),
-				'currency'  => get_woocommerce_currency(),
-				'i18n'      => array(
+				'ajaxUrl'          => admin_url( 'admin-ajax.php' ),
+				'restUrl'          => rest_url( 'spg/v1/' ),
+				'nonce'            => wp_create_nonce( 'wp_rest' ),
+				'currency'         => get_woocommerce_currency(),
+				'orderReceivedUrl' => '', // Populated per-order on the checkout page.
+				'i18n'             => array(
+					'payTitle'    => __( 'Complete Your Payment', 'split-payment-gateway' ),
+					'shippingLabel' => __( 'Shipping', 'split-payment-gateway' ),
+					'totalLabel'  => __( 'Order Total', 'split-payment-gateway' ),
 					'paying'      => __( 'Processing...', 'split-payment-gateway' ),
-					'paid'        => __( 'Paid ✅', 'split-payment-gateway' ),
-					'failed'      => __( 'Failed ❌', 'split-payment-gateway' ),
+					'paid'        => __( 'Paid', 'split-payment-gateway' ),
+					'failed'      => __( 'Failed', 'split-payment-gateway' ),
 					'finalize'    => __( 'Finalize Order', 'split-payment-gateway' ),
 					'payShipping' => __( 'Pay Shipping', 'split-payment-gateway' ),
 					'payTotal'    => __( 'Pay Total', 'split-payment-gateway' ),

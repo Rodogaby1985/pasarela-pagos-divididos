@@ -115,17 +115,27 @@ class SPG_Payment_Routing_Engine {
 	 * @return array|null
 	 */
 	private function resolve_default( $client_id, $payment_type ) {
-		$col = 'shipping' === $payment_type ? 'is_default_shipping' : 'is_default_total';
-
-		$row = $this->db->get_row(
-			$this->db->prepare(
-				"SELECT * FROM `{$this->db->prefix}spg_client_gateways`
-				 WHERE client_id = %s AND {$col} = 1 AND is_active = 1
-				 LIMIT 1",
-				$client_id
-			),
-			ARRAY_A
-		);
+		if ( 'shipping' === $payment_type ) {
+			$row = $this->db->get_row(
+				$this->db->prepare(
+					"SELECT * FROM `{$this->db->prefix}spg_client_gateways`
+					 WHERE client_id = %s AND is_default_shipping = 1 AND is_active = 1
+					 LIMIT 1",
+					$client_id
+				),
+				ARRAY_A
+			);
+		} else {
+			$row = $this->db->get_row(
+				$this->db->prepare(
+					"SELECT * FROM `{$this->db->prefix}spg_client_gateways`
+					 WHERE client_id = %s AND is_default_total = 1 AND is_active = 1
+					 LIMIT 1",
+					$client_id
+				),
+				ARRAY_A
+			);
+		}
 
 		if ( ! $row ) {
 			return null;

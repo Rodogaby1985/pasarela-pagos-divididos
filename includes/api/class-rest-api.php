@@ -205,6 +205,26 @@ class SPG_Rest_Api {
 		$from      = $request->get_param( 'from' ) ?: gmdate( 'Y-m-01' );
 		$to        = $request->get_param( 'to' )   ?: gmdate( 'Y-m-t' );
 
+		// Validate date format (YYYY-MM-DD) to prevent unexpected SQL behaviour.
+		$date_pattern = '/^\d{4}-\d{2}-\d{2}$/';
+		if ( ! preg_match( $date_pattern, $from ) || ! preg_match( $date_pattern, $to ) ) {
+			return new WP_Error(
+				'spg_invalid_date',
+				__( 'Date parameters must be in YYYY-MM-DD format.', 'split-payment-gateway' ),
+				array( 'status' => 400 )
+			);
+		}
+
+		// Ensure the dates are actually valid calendar dates.
+		if ( ! checkdate( (int) substr( $from, 5, 2 ), (int) substr( $from, 8, 2 ), (int) substr( $from, 0, 4 ) ) ||
+		     ! checkdate( (int) substr( $to,   5, 2 ), (int) substr( $to,   8, 2 ), (int) substr( $to,   0, 4 ) ) ) {
+			return new WP_Error(
+				'spg_invalid_date',
+				__( 'One or more date parameters are not valid calendar dates.', 'split-payment-gateway' ),
+				array( 'status' => 400 )
+			);
+		}
+
 		$rows = $wpdb->get_results(
 			$wpdb->prepare(
 				"SELECT sp.*, tr.tx_type, tr.gateway, tr.tx_id, tr.amount,

@@ -151,18 +151,65 @@ class SPG_PayPal_Adapter extends SPG_Base_Adapter {
 	/**
 	 * {@inheritdoc}
 	 *
-	 * PayPal uses WEBHOOK-ID + CRC32 verification (simplified here with HMAC).
+	 * PayPal uses WEBHOOK-ID + CRC32 verification.
+	 * Full verification requires an API call to /v1/notifications/verify-webhook-signature.
+	 * This implementation performs the API-based verification.
 	 */
 	public function verify_webhook( $raw_body, array $headers ) {
-		$webhook_id = $this->config['webhook_id'] ?? '';
-		if ( empty( $webhook_id ) ) {
+		$webhook_id    = $this->config['webhook_id'] ?? '';
+		$client_id     = $this->config['client_id']  ?? '';
+		$client_secret = $this->config['client_secret'] ?? '';
+
+		if ( empty( $webhook_id ) || empty( $client_id ) || empty( $client_secret ) ) {
 			return false;
 		}
-		// Full PayPal webhook verification requires an API call to /v1/notifications/verify-webhook-signature.
-		// Here we do a lightweight check; production code should call the API.
-		$expected = hash_hmac( 'sha256', $webhook_id . $raw_body, $webhook_id );
-		$received = $headers['paypal-transmission-sig'] ?? ( $headers['PayPal-Transmission-Sig'] ?? '' );
-		return ! empty( $received );
+
+		// Required headers from PayPal.
+		$transmission_id  = $headers['paypal-transmission-id']  ?? ( $headers['PayPal-Transmission-Id']  ?? '' );
+		$transmission_time = $headers['paypal-transmission-time'] ?? ( $headers['PayPal-Transmission-Time'] ?? '' );
+		$transmission_sig = $headers['paypal-transmission-sig']  ?? ( $headers['PayPal-Transmission-Sig']  ?? '' );
+		$cert_url         = $headers['paypal-cert-url']          ?? ( $headers['PayPal-Cert-Url']          ?? '' );
+		$auth_algo        = $headers['paypal-auth-algo']         ?? ( $headers['PayPal-Auth-Algo']         ?? 'SHA256withRSA' );
+
+		if ( empty( $transmission_id ) || empty( $transmission_sig ) ) {
+			return false;
+		}
+
+		// Verify via PayPal API (recommended for production).
+		try {
+			$base  = $this->get_api_base();
+			$token = $this->get_access_token();
+
+			$verification_body = array(
+				'transmission_id'   => $transmission_id,
+				'transmission_time' => $transmission_time,
+				'cert_url'          => $cert_url,
+				'auth_algo'         => $auth_algo,
+				'transmission_sig'  => $transmission_sig,
+				'webhook_id'        => $webhook_id,
+				'webhook_event'     => json_decode( $raw_body, true ),
+			);
+
+			$response = $this->http_request(
+				$base . '/v1/notifications/verify-webhook-signature',
+				array(
+					'method'  => 'POST',
+					'headers' => array(
+						'Authorization' => 'Bearer ' . $token,
+						'Content-Type'  => 'application/json',
+					),
+					'body'    => wp_json_encode( $verification_body ),
+					'timeout' => 20,
+				)
+			);
+
+			$data = $this->decode_response( $response );
+			return ( $data['verification_status'] ?? '' ) === 'SUCCESS';
+
+		} catch ( Exception $e ) {
+			$this->log_warning( 'PayPal webhook verification API call failed.', array( 'error' => $e->getMessage() ) );
+			return false;
+		}
 	}
 
 	/**

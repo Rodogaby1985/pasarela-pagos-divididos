@@ -13,8 +13,8 @@
     const params        = new URLSearchParams(window.location.search);
     const orderId       = params.get('spg_order_id');
     const sessionId     = params.get('spg_session_id');
-    const shippingUrl   = decodeURIComponent(params.get('spg_shipping_url') || '');
-    const totalUrl      = decodeURIComponent(params.get('spg_total_url') || '');
+    const shippingUrl   = sanitizeRedirectUrl( decodeURIComponent(params.get('spg_shipping_url') || '') );
+    const totalUrl      = sanitizeRedirectUrl( decodeURIComponent(params.get('spg_total_url') || '') );
     const shippingAmt   = parseFloat(params.get('spg_shipping_amount') || 0);
     const totalAmt      = parseFloat(params.get('spg_total_amount')    || 0);
     const shippingGw    = params.get('spg_shipping_gw') || '';
@@ -99,6 +99,12 @@
 
     // ── Payment windows ────────────────────────────────────────────────────────
     function openPaymentWindow(url, type) {
+        // URL was already validated by sanitizeRedirectUrl(); extra guard here.
+        if (!url || !isValidHttpUrl(url)) {
+            console.error('[SPG] Invalid payment URL for type:', type);
+            return;
+        }
+
         const popup = window.open(url, `spg_${type}_payment`, 'width=900,height=700,scrollbars=yes');
 
         if (!popup) {
@@ -169,7 +175,17 @@
     }
 
     function finalizeOrder() {
-        window.location.href = `${window.location.origin}/checkout/order-received/${orderId}/`;
+        // Use the order-received URL provided by the server, falling back to a safe local redirect.
+        const receivedUrl = spgData.orderReceivedUrl
+            ? sanitizeRedirectUrl(spgData.orderReceivedUrl)
+            : null;
+
+        if (receivedUrl) {
+            window.location.href = receivedUrl;
+        } else {
+            // Fallback: reload the page so WooCommerce handles the redirect.
+            window.location.reload();
+        }
     }
 
     // ── Utility ────────────────────────────────────────────────────────────────
@@ -184,6 +200,35 @@
         const div = document.createElement('div');
         div.textContent = str || '';
         return div.innerHTML;
+    }
+
+    /**
+     * Allow only http:// or https:// URLs; strip everything else.
+     *
+     * @param {string} url Candidate URL.
+     * @returns {string} The same URL when valid, empty string otherwise.
+     */
+    function sanitizeRedirectUrl(url) {
+        if (!url) return '';
+        try {
+            const parsed = new URL(url);
+            if (parsed.protocol === 'http:' || parsed.protocol === 'https:') {
+                return url;
+            }
+        } catch (e) {
+            // Not a valid URL.
+        }
+        return '';
+    }
+
+    /**
+     * Check whether a string is an absolute http(s) URL.
+     *
+     * @param {string} url
+     * @returns {boolean}
+     */
+    function isValidHttpUrl(url) {
+        return sanitizeRedirectUrl(url) !== '';
     }
 
 }(jQuery));

@@ -53,17 +53,17 @@ class SPG_Split_Payment_Service {
 	 * @throws Exception On any failure.
 	 */
 	public function initiate( WC_Order $order, $client_id ) {
-		$order_id        = $order->get_id();
-		$shipping_amount = (float) $order->get_shipping_total();
-		$order_total     = (float) $order->get_subtotal();
-		$currency        = $order->get_currency();
-		$return_url      = $order->get_checkout_order_received_url();
+		$order_id         = $order->get_id();
+		$shipping_amount  = (float) $order->get_shipping_total();
+		$order_subtotal   = (float) $order->get_subtotal(); // Products only, excluding shipping.
+		$currency         = $order->get_currency();
+		$return_url       = $order->get_checkout_order_received_url();
 
 		$context = array( 'currency' => $currency );
 
 		// Resolve gateways.
 		$shipping_gw = $this->router->resolve( $client_id, 'shipping', $shipping_amount, $context );
-		$total_gw    = $this->router->resolve( $client_id, 'total',    $order_total,     $context );
+		$total_gw    = $this->router->resolve( $client_id, 'total',    $order_subtotal,  $context );
 
 		// Build adapters.
 		$shipping_adapter = $this->factory->get_adapter( $shipping_gw['name'], $shipping_gw['config'] );
@@ -88,7 +88,7 @@ class SPG_Split_Payment_Service {
 
 		$total_result = $total_adapter->initiate( array(
 			'order_id'    => "{$order_id}-total",
-			'amount'      => $order_total,
+			'amount'      => $order_subtotal,
 			'currency'    => $currency,
 			'description' => sprintf(
 				/* translators: %d: order ID */
@@ -115,7 +115,7 @@ class SPG_Split_Payment_Service {
 				'shipping_tx_id'   => $shipping_result['transaction_id'],
 				'total_tx_id'      => $total_result['transaction_id'],
 				'shipping_amount'  => $shipping_amount,
-				'total_amount'     => $order_total,
+				'total_amount'     => $order_subtotal,
 				'currency'         => $currency,
 				'status'           => 'initiated',
 				'metadata'         => wp_json_encode( array( 'session_id' => $session_id ) ),

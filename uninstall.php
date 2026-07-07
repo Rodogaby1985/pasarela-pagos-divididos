@@ -41,7 +41,10 @@ if ( $remove_data ) {
 
 	// Remove order meta.
 	$wpdb->query(
-		"DELETE FROM {$wpdb->postmeta}
-		 WHERE meta_key LIKE '_spg_%'"
+		$wpdb->prepare(
+			"DELETE FROM {$wpdb->postmeta}
+			 WHERE meta_key LIKE %s",
+			$wpdb->esc_like( '_spg_' ) . '%'
+		)
 	);
 }
