@@ -12,6 +12,7 @@ defined( 'ABSPATH' ) || exit;
 class SPG_Split_Payment_Service {
 
 	use SPG_Logger;
+	use SPG_Security;
 
 	/** @var wpdb */
 	private $db;
@@ -41,29 +42,55 @@ class SPG_Split_Payment_Service {
 	/**
 	 * Initiate a split payment for a WooCommerce order.
 	 *
-	 * @param WC_Order $order     WooCommerce order.
-	 * @param string   $client_id Store/client identifier.
+	 * Supports multi-method: each section can independently use either a
+	 * traditional gateway (redirect URL) or QR Transfer (inline QR code).
+	 *
+	 * @param WC_Order $order          WooCommerce order.
+	 * @param string   $client_id      Store/client identifier.
+	 * @param array    $method_choices {
+	 *     Optional method overrides.
+	 *     @type string $shipping_method  Gateway slug or 'qr_transfer'.
+	 *     @type string $total_method     Gateway slug or 'qr_transfer'.
+	 * }
 	 * @return array {
-	 *     @type string $shipping_payment_url  URL to pay for shipping.
-	 *     @type string $total_payment_url     URL to pay for products.
+	 *     @type string $shipping_payment_url  URL to pay shipping (empty for QR).
+	 *     @type string $total_payment_url     URL to pay total (empty for QR).
 	 *     @type string $shipping_gateway      Gateway name for shipping.
 	 *     @type string $total_gateway         Gateway name for total.
+	 *     @type string $shipping_method_type  'gateway' or 'qr_transfer'.
+	 *     @type string $total_method_type     'gateway' or 'qr_transfer'.
+	 *     @type array  $shipping_qr_data      QR payload when shipping uses QR Transfer.
+	 *     @type array  $total_qr_data         QR payload when total uses QR Transfer.
 	 *     @type string $session_id            Internal tracking token.
 	 * }
 	 * @throws Exception On any failure.
 	 */
-	public function initiate( WC_Order $order, $client_id ) {
-		$order_id         = $order->get_id();
-		$shipping_amount  = (float) $order->get_shipping_total();
-		$order_subtotal   = (float) $order->get_subtotal(); // Products only, excluding shipping.
-		$currency         = $order->get_currency();
-		$return_url       = $order->get_checkout_order_received_url();
+	public function initiate( WC_Order $order, $client_id, array $method_choices = array() ) {
+		$order_id        = $order->get_id();
+		$shipping_amount = (float) $order->get_shipping_total();
+		$order_subtotal  = (float) $order->get_subtotal();
+		$currency        = $order->get_currency();
+		$return_url      = $order->get_checkout_order_received_url();
 
 		$context = array( 'currency' => $currency );
 
-		// Resolve gateways.
+		// Resolve gateways (routing engine may be overridden by explicit method_choices).
 		$shipping_gw = $this->router->resolve( $client_id, 'shipping', $shipping_amount, $context );
 		$total_gw    = $this->router->resolve( $client_id, 'total',    $order_subtotal,  $context );
+
+		// Allow explicit method overrides from the frontend selection.
+		if ( ! empty( $method_choices['shipping_method'] ) ) {
+			$shipping_gw['name'] = sanitize_key( $method_choices['shipping_method'] );
+			$shipping_gw['config'] = $this->get_gateway_config( $client_id, $shipping_gw['name'] );
+		}
+		if ( ! empty( $method_choices['total_method'] ) ) {
+			$total_gw['name'] = sanitize_key( $method_choices['total_method'] );
+			$total_gw['config'] = $this->get_gateway_config( $client_id, $total_gw['name'] );
+		}
+
+		// Determine method types.
+		$shipping_method_type = ( 'qr_transfer' === $shipping_gw['name'] ) ? 'qr_transfer' : 'gateway';
+		$total_method_type    = ( 'qr_transfer' === $total_gw['name'] )    ? 'qr_transfer' : 'gateway';
 
 		// Build adapters.
 		$shipping_adapter = $this->factory->get_adapter( $shipping_gw['name'], $shipping_gw['config'] );
@@ -108,28 +135,32 @@ class SPG_Split_Payment_Service {
 		$this->db->insert(
 			$this->db->prefix . 'spg_split_payments',
 			array(
-				'order_id'         => $order_id,
-				'client_id'        => sanitize_text_field( $client_id ),
-				'shipping_gateway' => $shipping_gw['name'],
-				'total_gateway'    => $total_gw['name'],
-				'shipping_tx_id'   => $shipping_result['transaction_id'],
-				'total_tx_id'      => $total_result['transaction_id'],
-				'shipping_amount'  => $shipping_amount,
-				'total_amount'     => $order_subtotal,
-				'currency'         => $currency,
-				'status'           => 'initiated',
-				'metadata'         => wp_json_encode( array( 'session_id' => $session_id ) ),
-				'created_at'       => current_time( 'mysql', true ),
-				'updated_at'       => current_time( 'mysql', true ),
+				'order_id'             => $order_id,
+				'client_id'            => sanitize_text_field( $client_id ),
+				'shipping_gateway'     => $shipping_gw['name'],
+				'shipping_method_type' => $shipping_method_type,
+				'total_gateway'        => $total_gw['name'],
+				'total_method_type'    => $total_method_type,
+				'shipping_tx_id'       => $shipping_result['transaction_id'],
+				'total_tx_id'          => $total_result['transaction_id'],
+				'shipping_amount'      => $shipping_amount,
+				'total_amount'         => $order_subtotal,
+				'currency'             => $currency,
+				'status'               => 'initiated',
+				'metadata'             => wp_json_encode( array( 'session_id' => $session_id ) ),
+				'created_at'           => current_time( 'mysql', true ),
+				'updated_at'           => current_time( 'mysql', true ),
 			)
 		);
 
-		// Store session_id on the order meta for later cross-reference.
-		$order->update_meta_data( '_spg_session_id',      $session_id );
-		$order->update_meta_data( '_spg_shipping_tx_id',  $shipping_result['transaction_id'] );
-		$order->update_meta_data( '_spg_total_tx_id',     $total_result['transaction_id'] );
-		$order->update_meta_data( '_spg_shipping_gateway', $shipping_gw['name'] );
-		$order->update_meta_data( '_spg_total_gateway',    $total_gw['name'] );
+		// Store session metadata on the order.
+		$order->update_meta_data( '_spg_session_id',           $session_id );
+		$order->update_meta_data( '_spg_shipping_tx_id',       $shipping_result['transaction_id'] );
+		$order->update_meta_data( '_spg_total_tx_id',          $total_result['transaction_id'] );
+		$order->update_meta_data( '_spg_shipping_gateway',     $shipping_gw['name'] );
+		$order->update_meta_data( '_spg_total_gateway',        $total_gw['name'] );
+		$order->update_meta_data( '_spg_shipping_method_type', $shipping_method_type );
+		$order->update_meta_data( '_spg_total_method_type',    $total_method_type );
 		$order->save();
 
 		$order->update_status(
@@ -140,10 +171,16 @@ class SPG_Split_Payment_Service {
 		$this->log_info( 'Split payment initiated.', array( 'order_id' => $order_id ) );
 
 		return array(
-			'shipping_payment_url' => $shipping_result['redirect_url'],
-			'total_payment_url'    => $total_result['redirect_url'],
+			'shipping_payment_url' => $shipping_result['redirect_url'] ?? '',
+			'total_payment_url'    => $total_result['redirect_url'] ?? '',
 			'shipping_gateway'     => $shipping_gw['name'],
 			'total_gateway'        => $total_gw['name'],
+			'shipping_method_type' => $shipping_method_type,
+			'total_method_type'    => $total_method_type,
+			'shipping_qr_data'     => $shipping_result['qr_data'] ?? null,
+			'total_qr_data'        => $total_result['qr_data'] ?? null,
+			'shipping_expires_at'  => $shipping_result['expires_at'] ?? null,
+			'total_expires_at'     => $total_result['expires_at'] ?? null,
 			'session_id'           => $session_id,
 		);
 	}
@@ -289,5 +326,49 @@ class SPG_Split_Payment_Service {
 		}
 
 		return array( $shipping_paid, $total_paid );
+	}
+
+	/**
+	 * Load gateway configuration for a given client and gateway name.
+	 *
+	 * Decrypts the stored credentials from the database.
+	 *
+	 * @param string $client_id    Client identifier.
+	 * @param string $gateway_name Gateway slug.
+	 * @return array Decrypted config array (empty if not found).
+	 */
+	private function get_gateway_config( $client_id, $gateway_name ) {
+		$row = $this->db->get_row(
+			$this->db->prepare(
+				"SELECT credentials, qr_alias FROM `{$this->db->prefix}spg_client_gateways`
+				 WHERE client_id = %s AND gateway_name = %s AND is_active = 1
+				 LIMIT 1",
+				$client_id,
+				$gateway_name
+			),
+			ARRAY_A
+		);
+
+		if ( ! $row ) {
+			return array();
+		}
+
+		$config = array();
+
+		if ( ! empty( $row['credentials'] ) ) {
+			try {
+				$decrypted = $this->decrypt( $row['credentials'] );
+				$config    = json_decode( $decrypted, true ) ?: array();
+			} catch ( Exception $e ) {
+				$this->log_warning( 'Failed to decrypt gateway credentials.', array( 'gateway' => $gateway_name ) );
+			}
+		}
+
+		// For QR Transfer, inject the alias directly.
+		if ( 'qr_transfer' === $gateway_name && ! empty( $row['qr_alias'] ) ) {
+			$config['alias'] = $row['qr_alias'];
+		}
+
+		return $config;
 	}
 }

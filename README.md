@@ -11,15 +11,75 @@ A WordPress/WooCommerce plugin that acts as a payment bridge, allowing store own
 | Category | Details |
 |---|---|
 | **Split Payments** | Separate charges for shipping vs. order total, each routed to a different processor |
+| **Multi-Method Selection** | Customer chooses QR Transfer OR a traditional gateway per section at checkout |
+| **QR Transfer** | Generates a bank-scannable QR (alias + amount + 15-min timer + SHA-256 hash) for direct bank transfers |
 | **Unlimited Gateways** | MercadoPago, Nave, Stripe, PayPal out-of-the-box; add more via a simple adapter class |
 | **Dynamic Routing** | Rule-based engine (priority, amount ranges, currency/country conditions) + per-client defaults |
 | **Fiscal Segregation** | Each gateway stores its own fiscal entity name, tax ID, and address for audit trails |
-| **Checkout Modal** | Responsive frontend modal with real-time ⏳ → ✅ → ❌ payment status indicators |
-| **Admin Panel** | WooCommerce sub-menu for gateway configuration, split rules, dashboard and webhook logs |
-| **REST API** | Endpoints for payment initiation, validation, webhooks, and fiscal reports |
+| **Checkout Modal** | Responsive frontend modal with per-section method selection, inline QR display and countdown timer |
+| **Admin Panel** | WooCommerce sub-menu for gateway configuration, QR Transfer aliases, split rules, and webhook logs |
+| **REST API** | Endpoints for payment initiation, validation, QR generation, QR webhooks, and fiscal reports |
 | **Split Refunds** | Pro-rata refund splitting across both gateways |
 | **Audit & Reconciliation** | Full transaction reconciliation table with fiscal document tracking |
-| **Security** | HMAC-SHA256 webhook validation, AES-256-CBC credential encryption, nonce verification |
+| **Security** | HMAC-SHA256 webhook validation, AES-256-CBC credential encryption, QR integrity hash, nonce verification |
+
+---
+
+## QR Transfer
+
+QR Transfer is a new adapter that lets customers pay by scanning a QR code with their banking app.
+
+### How it works
+
+```
+CUSTOMER AT CHECKOUT
+    ↓
+SELECTS "QR Transfer" for Subtotal OR Shipping
+    ↓
+QR IS GENERATED:
+  ├─ Encodes: alias, amount, currency, concept, expiry, SHA-256 hash
+  ├─ 15-minute countdown timer shown inline
+  └─ Customer scans with banking app (Mercado Pago, MODO, bank app, etc.)
+    ↓
+BANK CONFIRMS VIA WEBHOOK:
+  POST /wp-json/spg/v1/webhooks/qr-transfer
+  Body: { transaction_id, order_ref, amount, status: "confirmed" }
+    ↓
+ORDER COMPLETES when both sections are paid
+```
+
+### QR Data Format
+
+```json
+{
+  "v":       "1",
+  "alias":   "tienda.empresa",
+  "amount":  "100.00",
+  "currency": "ARS",
+  "concept": "Orden #123",
+  "ref":     "123-total",
+  "exp":     1700000000,
+  "hash":    "sha256hmac..."
+}
+```
+
+### Country Support
+
+| Country | Format |
+|---------|--------|
+| Argentina | CBU / CVU / Alias interoperable |
+| Chile | CuentaRUT / RUT |
+| México | CLABE / CoDi |
+| Generic | Any custom alias string |
+
+### Configuration
+
+1. Go to **WooCommerce → Split Payment → QR Transfer**
+2. Enter the **Subtotal Alias** (store account)
+3. Enter the **Shipping Alias** (logistics operator account)
+4. Set the **Webhook Secret** for signature validation
+5. Configure your banking platform to send confirmations to:
+   `POST https://yoursite.com/wp-json/spg/v1/webhooks/qr-transfer`
 
 ---
 
@@ -126,6 +186,8 @@ Go to **WooCommerce → Settings → Payments**, enable **Split Payment Gateway*
 
 ## Payment Flow
 
+### Traditional Gateway Flow
+
 ```
 Customer clicks Place Order
         ↓
@@ -144,10 +206,31 @@ Each gateway fires a webhook → SPG_Webhook_Orchestrator
   ├─ Updates split_payments record
   └─ When BOTH are paid → calls WC_Order::payment_complete()
         ↓
-Modal polls /spg/v1/split-payment/validate every 3 s
+Modal polls /spg/v1/split-payment/validate every 2 s
   └─ Both ✅ → "Finalize Order" button is enabled
         ↓
 Customer clicks Finalize → redirected to order-received page
+```
+
+### QR Transfer Flow
+
+```
+Customer selects "QR Transfer" for a section
+        ↓
+initiate() generates QR payload + SHA-256 hash
+  ├─ alias, amount, currency, concept, expiry
+  └─ Stored in spg_qr_transfers table
+        ↓
+Modal shows QR inline with 15-min countdown
+  └─ Customer scans with banking app
+        ↓
+Banking app / aggregator sends webhook
+  POST /wp-json/spg/v1/webhooks/qr-transfer
+  Body: { transaction_id: "<hash>", status: "confirmed" }
+        ↓
+SPG_Webhook_Orchestrator validates hash + updates record
+        ↓
+Modal polling detects confirmed status → order completes
 ```
 
 ---
@@ -156,9 +239,11 @@ Customer clicks Finalize → redirected to order-received page
 
 | Method | Endpoint | Description |
 |---|---|---|
-| `POST` | `/wp-json/spg/v1/split-payment/initiate` | Initiate a split payment for an order |
-| `POST` | `/wp-json/spg/v1/split-payment/validate` | Poll payment status |
-| `POST` | `/wp-json/spg/v1/webhooks/{gateway}` | Receive webhook notifications |
+| `POST` | `/wp-json/spg/v1/split-payment/initiate` | Initiate split payment; accepts `shipping_method` and `total_method` params |
+| `POST` | `/wp-json/spg/v1/split-payment/validate` | Poll payment status for both sections |
+| `POST` | `/wp-json/spg/v1/qr/generate` | Generate/refresh a QR code for a specific section |
+| `POST` | `/wp-json/spg/v1/webhooks/qr-transfer` | Receive QR Transfer payment confirmations |
+| `POST` | `/wp-json/spg/v1/webhooks/{gateway}` | Receive webhook notifications from traditional gateways |
 | `GET`  | `/wp-json/spg/v1/admin/fiscal-report/{client_id}` | Fiscal/audit report (admin only) |
 
 ---
@@ -189,6 +274,8 @@ composer install
 
 - Webhook signatures are validated via HMAC-SHA256 before any processing.
 - Gateway credentials are encrypted with AES-256-CBC before DB storage.
+- QR codes include a SHA-256 HMAC integrity hash to prevent tampering.
+- QR transfers expire after 15 minutes, preventing stale payment requests.
 - All admin AJAX actions are protected by WordPress nonces and capability checks.
 - Tokenisation is fully delegated to each gateway — card numbers are never handled by this plugin.
 

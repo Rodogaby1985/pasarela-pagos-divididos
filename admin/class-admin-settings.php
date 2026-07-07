@@ -20,6 +20,7 @@ class SPG_Admin_Settings {
 		add_action( 'wp_ajax_spg_delete_gateway', array( $this, 'ajax_delete_gateway' ) );
 		add_action( 'wp_ajax_spg_save_rule', array( $this, 'ajax_save_rule' ) );
 		add_action( 'wp_ajax_spg_delete_rule', array( $this, 'ajax_delete_rule' ) );
+		add_action( 'wp_ajax_spg_save_qr_settings', array( $this, 'ajax_save_qr_settings' ) );
 	}
 
 	/**
@@ -85,9 +86,10 @@ class SPG_Admin_Settings {
 			wp_die( esc_html__( 'Access denied.', 'split-payment-gateway' ) );
 		}
 
-		$client_id = sanitize_key( get_option( 'spg_default_client_id', sanitize_key( get_option( 'blogname', 'default' ) ) ) );
-		$gateways  = $this->get_client_gateways( $client_id );
-		$rules     = $this->get_client_rules( $client_id );
+		$client_id  = sanitize_key( get_option( 'spg_default_client_id', sanitize_key( get_option( 'blogname', 'default' ) ) ) );
+		$gateways   = $this->get_client_gateways( $client_id );
+		$rules      = $this->get_client_rules( $client_id );
+		$qr_settings = $this->get_qr_settings();
 
 		include SPG_PLUGIN_DIR . 'admin/templates/settings-page.php';
 	}
@@ -220,6 +222,36 @@ class SPG_Admin_Settings {
 		wp_send_json_success( array( 'message' => __( 'Rule removed.', 'split-payment-gateway' ) ) );
 	}
 
+	/**
+	 * Save QR Transfer global settings.
+	 */
+	public function ajax_save_qr_settings() {
+		$this->verify_ajax_nonce();
+
+		$alias_subtotal  = sanitize_text_field( $_POST['qr_alias_subtotal']  ?? '' );
+		$alias_shipping  = sanitize_text_field( $_POST['qr_alias_shipping']  ?? '' );
+		$webhook_secret  = sanitize_text_field( $_POST['qr_webhook_secret']  ?? '' );
+		$country         = sanitize_key( $_POST['qr_country']               ?? 'AR' );
+
+		update_option( 'spg_qr_alias_subtotal', $alias_subtotal );
+		update_option( 'spg_qr_alias_shipping', $alias_shipping );
+		update_option( 'spg_qr_country',        strtoupper( $country ) );
+
+		// Only update the webhook secret if a non-empty value is provided (avoid overwriting).
+		if ( ! empty( $webhook_secret ) ) {
+			update_option( 'spg_qr_webhook_secret', $webhook_secret );
+		}
+
+		// Persist aliases to the client_gateways table so the adapter can read them.
+		global $wpdb;
+		$client_id = sanitize_key( get_option( 'spg_default_client_id', sanitize_key( get_option( 'blogname', 'default' ) ) ) );
+
+		$this->upsert_qr_gateway( $wpdb, $client_id, 'qr_transfer_subtotal', $alias_subtotal );
+		$this->upsert_qr_gateway( $wpdb, $client_id, 'qr_transfer', $alias_shipping );
+
+		wp_send_json_success( array( 'message' => __( 'QR Transfer settings saved.', 'split-payment-gateway' ) ) );
+	}
+
 	// ── Private helpers ────────────────────────────────────────────────────────
 
 	/**
@@ -283,7 +315,62 @@ class SPG_Admin_Settings {
 		try {
 			return SPG_Gateway_Adapter_Factory::instance()->get_registered_gateways();
 		} catch ( Exception $e ) {
-			return array( 'mercadopago', 'nave', 'stripe', 'paypal' );
+			return array( 'mercadopago', 'nave', 'stripe', 'paypal', 'qr_transfer' );
+		}
+	}
+
+	/**
+	 * Retrieve QR Transfer settings from wp_options.
+	 *
+	 * @return array
+	 */
+	private function get_qr_settings() {
+		return array(
+			'qr_alias_subtotal' => get_option( 'spg_qr_alias_subtotal', '' ),
+			'qr_alias_shipping' => get_option( 'spg_qr_alias_shipping', '' ),
+			'qr_webhook_secret' => get_option( 'spg_qr_webhook_secret', '' ) ? '••••••••' : '',
+			'qr_country'        => get_option( 'spg_qr_country', 'AR' ),
+		);
+	}
+
+	/**
+	 * Insert or update a QR Transfer gateway record in spg_client_gateways.
+	 *
+	 * @param wpdb   $wpdb      WordPress DB.
+	 * @param string $client_id Client ID.
+	 * @param string $slug      Gateway slug.
+	 * @param string $alias     Bank alias.
+	 */
+	private function upsert_qr_gateway( $wpdb, $client_id, $slug, $alias ) {
+		$existing = $wpdb->get_var(
+			$wpdb->prepare(
+				"SELECT id FROM `{$wpdb->prefix}spg_client_gateways`
+				 WHERE client_id = %s AND gateway_name = %s
+				 LIMIT 1",
+				$client_id,
+				$slug
+			)
+		);
+
+		$data = array(
+			'qr_alias'   => $alias,
+			'is_active'  => ! empty( $alias ) ? 1 : 0,
+			'updated_at' => current_time( 'mysql', true ),
+		);
+
+		if ( $existing ) {
+			$wpdb->update( $wpdb->prefix . 'spg_client_gateways', $data, array( 'id' => $existing ) );
+		} else {
+			$wpdb->insert(
+				$wpdb->prefix . 'spg_client_gateways',
+				array_merge( $data, array(
+					'client_id'    => $client_id,
+					'gateway_name' => $slug,
+					'display_name' => 'QR Transfer',
+					'credentials'  => $this->encrypt( wp_json_encode( array( 'alias' => $alias ) ) ),
+					'created_at'   => current_time( 'mysql', true ),
+				) )
+			);
 		}
 	}
 }
