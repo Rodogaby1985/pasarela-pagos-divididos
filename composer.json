@@ -1,0 +1,35 @@
+{
+    "name": "split-payment-gateway/split-payment-gateway",
+    "description": "Split Payment Gateway for WooCommerce – multi-processor payment aggregator with fiscal segregation of shipping and order totals.",
+    "type": "wordpress-plugin",
+    "license": "GPL-2.0-or-later",
+    "require": {
+        "php": ">=7.4"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^9.5",
+        "wp-phpunit/wp-phpunit": "^6.0",
+        "squizlabs/php_codesniffer": "^3.7",
+        "wp-coding-standards/wpcs": "^3.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "SplitPaymentGateway\\": "includes/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "SplitPaymentGateway\\Tests\\": "tests/"
+        }
+    },
+    "scripts": {
+        "test": "phpunit",
+        "phpcs": "phpcs --standard=WordPress .",
+        "phpcbf": "phpcbf --standard=WordPress ."
+    },
+    "config": {
+        "allow-plugins": {
+            "dealerdirect/phpcodesniffer-composer-installer": true
+        }
+    }
+}

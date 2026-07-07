@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<!--
+  payment-modal.html
+  Standalone HTML reference for the Split Payment Modal.
+  In production this is rendered dynamically by split-payment-modal.js.
+  This file is provided for design reference and prototyping.
+-->
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Split Payment</title>
+    <link rel="stylesheet" href="../css/split-payment-modal.css">
+    <style>
+        body { background: #f0f0f0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+    </style>
+</head>
+<body>
+
+<div class="spg-overlay" id="spg-overlay"></div>
+
+<div class="spg-modal" id="spg-modal" role="dialog" aria-modal="true" aria-label="Complete Your Payment">
+
+    <h2>Complete Your Payment</h2>
+
+    <!-- Order summary -->
+    <table class="spg-summary" aria-label="Payment summary">
+        <tbody>
+            <tr class="spg-row-shipping">
+                <td class="spg-label">Shipping</td>
+                <td class="spg-amount">$15.00</td>
+                <td class="spg-gateway">via Nave</td>
+            </tr>
+            <tr class="spg-row-total">
+                <td class="spg-label">Order Total</td>
+                <td class="spg-amount">$100.00</td>
+                <td class="spg-gateway">via MercadoPago</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <!-- Payment status indicators -->
+    <div class="spg-status-section">
+        <div class="spg-status-row" id="spg-shipping-status-row">
+            <span class="spg-status-label">Shipping Payment</span>
+            <span class="spg-indicator loading" id="spg-shipping-indicator" title="Pending">⏳</span>
+        </div>
+        <div class="spg-status-row" id="spg-total-status-row">
+            <span class="spg-status-label">Order Payment</span>
+            <span class="spg-indicator loading" id="spg-total-indicator" title="Pending">⏳</span>
+        </div>
+    </div>
+
+    <!-- Action buttons -->
+    <div class="spg-buttons">
+        <button class="spg-btn spg-btn-shipping" id="spg-pay-shipping">
+            Pay Shipping – $15.00
+        </button>
+        <button class="spg-btn spg-btn-total" id="spg-pay-total">
+            Pay Order – $100.00
+        </button>
+        <button class="spg-btn spg-btn-finalize" id="spg-finalize" disabled>
+            Finalize Order 🔒
+        </button>
+    </div>
+
+</div>
+
+<!-- Prototype interaction -->
+<script>
+    // Simulate paying shipping after 2 s, total after 4 s.
+    setTimeout(function () {
+        const el = document.getElementById('spg-shipping-indicator');
+        el.classList.remove('loading');
+        el.classList.add('success');
+        el.textContent = '✅';
+        el.title = 'Paid';
+    }, 2000);
+
+    setTimeout(function () {
+        const el = document.getElementById('spg-total-indicator');
+        el.classList.remove('loading');
+        el.classList.add('success');
+        el.textContent = '✅';
+        el.title = 'Paid';
+
+        document.getElementById('spg-finalize').disabled = false;
+        document.getElementById('spg-finalize').textContent = 'Finalize Order ✅';
+    }, 4000);
+</script>
+</body>
+</html>

@@ -1,0 +1,93 @@
+/* ─── Admin Settings – Split Payment Gateway ─────────────────────────────── */
+
+.spg-admin-wrap {
+    max-width: 1200px;
+}
+
+/* Tabs */
+.spg-tabs {
+    margin-bottom: 1em;
+}
+
+.spg-tab-content {
+    background: #fff;
+    border: 1px solid #c3c4c7;
+    border-top: none;
+    padding: 1.5em;
+}
+
+/* Form panel */
+.spg-form-panel {
+    background: #f6f7f7;
+    border: 1px solid #c3c4c7;
+    border-radius: 4px;
+    margin-top: 1.5em;
+    padding: 1.5em;
+}
+
+/* Stats row */
+.spg-stats-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1em;
+    margin-bottom: 2em;
+}
+
+.spg-stat-card {
+    background: #fff;
+    border: 1px solid #c3c4c7;
+    border-radius: 4px;
+    flex: 1 1 160px;
+    padding: 1em 1.5em;
+    text-align: center;
+}
+
+.spg-stat-label {
+    display: block;
+    color: #646970;
+    font-size: 0.85em;
+    margin-bottom: 0.4em;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.spg-stat-value {
+    display: block;
+    font-size: 1.8em;
+    font-weight: 600;
+    color: #1d2327;
+}
+
+.spg-stat-success { border-top: 4px solid #00a32a; }
+.spg-stat-success .spg-stat-value { color: #00a32a; }
+
+.spg-stat-error { border-top: 4px solid #d63638; }
+.spg-stat-error .spg-stat-value { color: #d63638; }
+
+.spg-stat-revenue { border-top: 4px solid #007cba; }
+.spg-stat-revenue .spg-stat-value { color: #007cba; }
+
+.spg-stat-warning { border-top: 4px solid #dba617; }
+.spg-stat-warning .spg-stat-value { color: #dba617; }
+
+/* Status badges */
+.spg-badge {
+    border-radius: 3px;
+    display: inline-block;
+    font-size: 0.8em;
+    font-weight: 600;
+    padding: 2px 8px;
+    text-transform: uppercase;
+}
+
+.spg-badge-completed  { background: #d7ede2; color: #007a3d; }
+.spg-badge-initiated  { background: #e7eff7; color: #0066c9; }
+.spg-badge-failed,
+.spg-badge-partial_failed { background: #fde8e8; color: #c92424; }
+.spg-badge-refunded   { background: #f0e6ff; color: #7b21ad; }
+
+/* Notices */
+#spg-notice {
+    margin-top: 1em;
+    padding: .75em 1em;
+}
