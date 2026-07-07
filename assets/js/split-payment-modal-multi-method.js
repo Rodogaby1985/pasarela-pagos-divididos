@@ -11,8 +11,24 @@
  * Requires:
  *  - jQuery (WordPress default)
  *  - spgData (localised via wp_localize_script in split-payment-plugin.php)
- *  - QRCode.js (bundled at the bottom of this file as a minimal inline implementation
- *    or loaded separately; the global `qrcode` function is expected)
+ *
+ * Optional QR rendering library (qrcode-generator):
+ *  To enable full QR image rendering, include qrcode-generator before this script:
+ *
+ *    Option A – CDN (add to your theme or child theme):
+ *      <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
+ *
+ *    Option B – npm/webpack build:
+ *      const qrcode = require('qrcode-generator');
+ *      window.qrcode = qrcode;
+ *
+ *    Option C – Enqueue via WordPress (recommended):
+ *      wp_enqueue_script('qrcode-generator',
+ *          'https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js',
+ *          array(), '1.4.4', true);
+ *      // Add 'qrcode-generator' to the $deps array of 'spg-modal-js' in the plugin.
+ *
+ *  If the library is not loaded, a text fallback is shown with the transfer data.
  */
 (function ($) {
     'use strict';
@@ -488,9 +504,9 @@
     }
 
     function finalizeOrder() {
-        const receivedUrl = spgData.orderReceivedUrl ? sanitizeRedirectUrl(spgData.orderReceivedUrl) : null;
-        if (receivedUrl) {
-            window.location.href = receivedUrl;
+        const orderReceivedUrl = spgData.orderReceivedUrl ? sanitizeRedirectUrl(spgData.orderReceivedUrl) : null;
+        if (orderReceivedUrl) {
+            window.location.href = orderReceivedUrl;
         } else {
             window.location.reload();
         }

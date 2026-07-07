@@ -81,10 +81,29 @@ class SPG_Split_Payment_Service {
 		// Allow explicit method overrides from the frontend selection.
 		if ( ! empty( $method_choices['shipping_method'] ) ) {
 			$shipping_gw['name'] = sanitize_key( $method_choices['shipping_method'] );
-			$shipping_gw['config'] = $this->get_gateway_config( $client_id, $shipping_gw['name'] );
 		}
 		if ( ! empty( $method_choices['total_method'] ) ) {
 			$total_gw['name'] = sanitize_key( $method_choices['total_method'] );
+		}
+
+		// Build adapter configs. QR Transfer reads aliases from wp_options directly.
+		if ( 'qr_transfer' === $shipping_gw['name'] ) {
+			$alias = get_option( 'spg_qr_alias_shipping', '' );
+			if ( empty( $alias ) ) {
+				throw new Exception( __( 'QR Transfer: Shipping alias is not configured. Go to WooCommerce → Split Payment → QR Transfer.', 'split-payment-gateway' ) );
+			}
+			$shipping_gw['config'] = array( 'alias' => $alias );
+		} else {
+			$shipping_gw['config'] = $this->get_gateway_config( $client_id, $shipping_gw['name'] );
+		}
+
+		if ( 'qr_transfer' === $total_gw['name'] ) {
+			$alias = get_option( 'spg_qr_alias_subtotal', '' );
+			if ( empty( $alias ) ) {
+				throw new Exception( __( 'QR Transfer: Subtotal alias is not configured. Go to WooCommerce → Split Payment → QR Transfer.', 'split-payment-gateway' ) );
+			}
+			$total_gw['config'] = array( 'alias' => $alias );
+		} else {
 			$total_gw['config'] = $this->get_gateway_config( $client_id, $total_gw['name'] );
 		}
 

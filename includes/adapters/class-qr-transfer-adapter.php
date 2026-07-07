@@ -199,9 +199,14 @@ class SPG_QR_Transfer_Adapter extends SPG_Base_Adapter {
 		$secret = $this->config['webhook_secret'] ?? get_option( 'spg_qr_webhook_secret', '' );
 
 		if ( empty( $secret ) ) {
-			// If no secret is configured, skip signature check (dev mode).
-			$this->log_warning( 'QR Transfer webhook secret not configured – skipping signature verification.' );
-			return true;
+			// In production, reject requests without a configured secret.
+			// Allow bypass only in local/debug environments to ease development.
+			if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+				$this->log_warning( 'QR Transfer webhook secret not configured – skipping verification (WP_DEBUG=true).' );
+				return true;
+			}
+			$this->log_error( 'QR Transfer webhook rejected: no webhook secret configured. Set it in WooCommerce → Split Payment → QR Transfer.' );
+			return false;
 		}
 
 		$provided_sig = $headers['x-spg-signature'] ?? $headers['X-SPG-Signature'] ?? '';

@@ -228,10 +228,10 @@ class SPG_Admin_Settings {
 	public function ajax_save_qr_settings() {
 		$this->verify_ajax_nonce();
 
-		$alias_subtotal  = sanitize_text_field( $_POST['qr_alias_subtotal']  ?? '' );
-		$alias_shipping  = sanitize_text_field( $_POST['qr_alias_shipping']  ?? '' );
-		$webhook_secret  = sanitize_text_field( $_POST['qr_webhook_secret']  ?? '' );
-		$country         = sanitize_key( $_POST['qr_country']               ?? 'AR' );
+		$alias_subtotal = sanitize_text_field( $_POST['qr_alias_subtotal'] ?? '' );
+		$alias_shipping = sanitize_text_field( $_POST['qr_alias_shipping'] ?? '' );
+		$webhook_secret = sanitize_text_field( $_POST['qr_webhook_secret']  ?? '' );
+		$country        = sanitize_key( $_POST['qr_country']               ?? 'AR' );
 
 		update_option( 'spg_qr_alias_subtotal', $alias_subtotal );
 		update_option( 'spg_qr_alias_shipping', $alias_shipping );
@@ -241,13 +241,6 @@ class SPG_Admin_Settings {
 		if ( ! empty( $webhook_secret ) ) {
 			update_option( 'spg_qr_webhook_secret', $webhook_secret );
 		}
-
-		// Persist aliases to the client_gateways table so the adapter can read them.
-		global $wpdb;
-		$client_id = sanitize_key( get_option( 'spg_default_client_id', sanitize_key( get_option( 'blogname', 'default' ) ) ) );
-
-		$this->upsert_qr_gateway( $wpdb, $client_id, 'qr_transfer_subtotal', $alias_subtotal );
-		$this->upsert_qr_gateway( $wpdb, $client_id, 'qr_transfer', $alias_shipping );
 
 		wp_send_json_success( array( 'message' => __( 'QR Transfer settings saved.', 'split-payment-gateway' ) ) );
 	}
@@ -331,46 +324,5 @@ class SPG_Admin_Settings {
 			'qr_webhook_secret' => get_option( 'spg_qr_webhook_secret', '' ) ? '••••••••' : '',
 			'qr_country'        => get_option( 'spg_qr_country', 'AR' ),
 		);
-	}
-
-	/**
-	 * Insert or update a QR Transfer gateway record in spg_client_gateways.
-	 *
-	 * @param wpdb   $wpdb      WordPress DB.
-	 * @param string $client_id Client ID.
-	 * @param string $slug      Gateway slug.
-	 * @param string $alias     Bank alias.
-	 */
-	private function upsert_qr_gateway( $wpdb, $client_id, $slug, $alias ) {
-		$existing = $wpdb->get_var(
-			$wpdb->prepare(
-				"SELECT id FROM `{$wpdb->prefix}spg_client_gateways`
-				 WHERE client_id = %s AND gateway_name = %s
-				 LIMIT 1",
-				$client_id,
-				$slug
-			)
-		);
-
-		$data = array(
-			'qr_alias'   => $alias,
-			'is_active'  => ! empty( $alias ) ? 1 : 0,
-			'updated_at' => current_time( 'mysql', true ),
-		);
-
-		if ( $existing ) {
-			$wpdb->update( $wpdb->prefix . 'spg_client_gateways', $data, array( 'id' => $existing ) );
-		} else {
-			$wpdb->insert(
-				$wpdb->prefix . 'spg_client_gateways',
-				array_merge( $data, array(
-					'client_id'    => $client_id,
-					'gateway_name' => $slug,
-					'display_name' => 'QR Transfer',
-					'credentials'  => $this->encrypt( wp_json_encode( array( 'alias' => $alias ) ) ),
-					'created_at'   => current_time( 'mysql', true ),
-				) )
-			);
-		}
 	}
 }
