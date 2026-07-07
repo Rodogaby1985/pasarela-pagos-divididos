@@ -18,6 +18,7 @@ defined( 'ABSPATH' ) || exit;
 	<!-- Tabs -->
 	<nav class="nav-tab-wrapper spg-tabs" id="spg-settings-tabs">
 		<a href="#tab-gateways" class="nav-tab nav-tab-active"><?php esc_html_e( 'Payment Gateways', 'split-payment-gateway' ); ?></a>
+		<a href="#tab-qr"       class="nav-tab"><?php esc_html_e( 'QR Transfer', 'split-payment-gateway' ); ?></a>
 		<a href="#tab-rules"    class="nav-tab"><?php esc_html_e( 'Split Rules', 'split-payment-gateway' ); ?></a>
 	</nav>
 
@@ -88,6 +89,7 @@ defined( 'ABSPATH' ) || exit;
 							<option value="nave">Nave</option>
 							<option value="stripe">Stripe</option>
 							<option value="paypal">PayPal</option>
+							<option value="qr_transfer"><?php esc_html_e( 'QR Transfer', 'split-payment-gateway' ); ?></option>
 						</select>
 					</td>
 				</tr>
@@ -130,6 +132,109 @@ defined( 'ABSPATH' ) || exit;
 			</p>
 		</div>
 	</div><!-- /tab-gateways -->
+
+	<!-- Tab: QR Transfer -->
+	<div id="tab-qr" class="spg-tab-content" style="display:none;">
+		<h2><?php esc_html_e( 'QR Transfer Configuration', 'split-payment-gateway' ); ?></h2>
+		<p class="description">
+			<?php esc_html_e( 'Configure bank aliases for QR Transfer payments. Customers scan the QR with their banking app and transfer directly to the configured alias.', 'split-payment-gateway' ); ?>
+		</p>
+
+		<table class="form-table" id="spg-qr-settings-form">
+			<tr>
+				<th><label for="spg-qr-alias-subtotal"><?php esc_html_e( 'Subtotal Alias (store)', 'split-payment-gateway' ); ?></label></th>
+				<td>
+					<input type="text" id="spg-qr-alias-subtotal" name="qr_alias_subtotal"
+						   class="regular-text"
+						   value="<?php echo esc_attr( $qr_settings['qr_alias_subtotal'] ?? '' ); ?>"
+						   placeholder="tienda.empresa">
+					<p class="description">
+						<?php esc_html_e( 'CBU, CVU, or alias for the store account. Customers use this to pay for products.', 'split-payment-gateway' ); ?>
+					</p>
+				</td>
+			</tr>
+			<tr>
+				<th><label for="spg-qr-alias-shipping"><?php esc_html_e( 'Shipping Alias (logistics)', 'split-payment-gateway' ); ?></label></th>
+				<td>
+					<input type="text" id="spg-qr-alias-shipping" name="qr_alias_shipping"
+						   class="regular-text"
+						   value="<?php echo esc_attr( $qr_settings['qr_alias_shipping'] ?? '' ); ?>"
+						   placeholder="operador.logistico">
+					<p class="description">
+						<?php esc_html_e( 'CBU, CVU, or alias for the logistics operator account. Customers use this to pay for shipping.', 'split-payment-gateway' ); ?>
+					</p>
+				</td>
+			</tr>
+			<tr>
+				<th><label for="spg-qr-country"><?php esc_html_e( 'Country / Standard', 'split-payment-gateway' ); ?></label></th>
+				<td>
+					<select id="spg-qr-country" name="qr_country">
+						<option value="AR" <?php selected( $qr_settings['qr_country'] ?? 'AR', 'AR' ); ?>>
+							<?php esc_html_e( 'Argentina (CBU / CVU / Alias)', 'split-payment-gateway' ); ?>
+						</option>
+						<option value="CL" <?php selected( $qr_settings['qr_country'] ?? 'AR', 'CL' ); ?>>
+							<?php esc_html_e( 'Chile (CuentaRUT / RUT)', 'split-payment-gateway' ); ?>
+						</option>
+						<option value="MX" <?php selected( $qr_settings['qr_country'] ?? 'AR', 'MX' ); ?>>
+							<?php esc_html_e( 'México (CLABE / CoDi)', 'split-payment-gateway' ); ?>
+						</option>
+						<option value="GENERIC" <?php selected( $qr_settings['qr_country'] ?? 'AR', 'GENERIC' ); ?>>
+							<?php esc_html_e( 'Generic (any alias string)', 'split-payment-gateway' ); ?>
+						</option>
+					</select>
+				</td>
+			</tr>
+			<tr>
+				<th><label for="spg-qr-webhook-secret"><?php esc_html_e( 'Webhook Secret', 'split-payment-gateway' ); ?></label></th>
+				<td>
+					<input type="password" id="spg-qr-webhook-secret" name="qr_webhook_secret"
+						   class="regular-text"
+						   placeholder="<?php echo esc_attr( $qr_settings['qr_webhook_secret'] ? '••••••••' : '' ); ?>"
+						   autocomplete="new-password">
+					<p class="description">
+						<?php esc_html_e( 'HMAC-SHA256 secret used to validate QR Transfer webhook notifications. Leave blank to keep existing value.', 'split-payment-gateway' ); ?>
+					</p>
+					<p class="description">
+						<?php esc_html_e( 'Webhook URL:', 'split-payment-gateway' ); ?>
+						<code><?php echo esc_html( rest_url( 'spg/v1/webhooks/qr-transfer' ) ); ?></code>
+					</p>
+				</td>
+			</tr>
+		</table>
+
+		<p>
+			<button class="button button-primary" id="spg-save-qr-settings">
+				<?php esc_html_e( 'Save QR Settings', 'split-payment-gateway' ); ?>
+			</button>
+		</p>
+
+		<hr>
+
+		<h3><?php esc_html_e( 'How it works', 'split-payment-gateway' ); ?></h3>
+		<ol>
+			<li><?php esc_html_e( 'Customer selects "QR Transfer" for a payment section at checkout.', 'split-payment-gateway' ); ?></li>
+			<li><?php esc_html_e( 'The plugin generates a QR code encoding the alias, amount, and a 15-minute timer.', 'split-payment-gateway' ); ?></li>
+			<li><?php esc_html_e( 'Customer scans the QR with their banking app (e.g. Mercado Pago, MODO, bank app).', 'split-payment-gateway' ); ?></li>
+			<li><?php esc_html_e( 'After transfer, the bank or aggregator sends a webhook to confirm payment.', 'split-payment-gateway' ); ?></li>
+			<li><?php esc_html_e( 'The order is automatically confirmed when both payments are received.', 'split-payment-gateway' ); ?></li>
+		</ol>
+
+		<h3><?php esc_html_e( 'QR Data Format', 'split-payment-gateway' ); ?></h3>
+		<p class="description">
+			<?php esc_html_e( 'The QR encodes a JSON payload with the following fields:', 'split-payment-gateway' ); ?>
+		</p>
+		<pre style="background:#f7f7f7;padding:12px;border:1px solid #ddd;border-radius:4px;">
+{
+  "v":       "1",            // schema version
+  "alias":   "tienda.mp",   // configured alias
+  "amount":  "100.00",
+  "currency":"ARS",
+  "concept": "Orden #123",
+  "ref":     "123-total",   // internal reference
+  "exp":     1700000000,    // expiry (Unix timestamp)
+  "hash":    "sha256..."    // HMAC-SHA256 integrity hash
+}</pre>
+	</div><!-- /tab-qr -->
 
 	<!-- Tab: Split Rules -->
 	<div id="tab-rules" class="spg-tab-content" style="display:none;">
@@ -203,6 +308,7 @@ defined( 'ABSPATH' ) || exit;
 							<option value="nave">Nave</option>
 							<option value="stripe">Stripe</option>
 							<option value="paypal">PayPal</option>
+							<option value="qr_transfer"><?php esc_html_e( 'QR Transfer', 'split-payment-gateway' ); ?></option>
 						</select>
 					</td>
 				</tr>
@@ -215,6 +321,7 @@ defined( 'ABSPATH' ) || exit;
 							<option value="nave">Nave</option>
 							<option value="stripe">Stripe</option>
 							<option value="paypal">PayPal</option>
+							<option value="qr_transfer"><?php esc_html_e( 'QR Transfer', 'split-payment-gateway' ); ?></option>
 						</select>
 					</td>
 				</tr>

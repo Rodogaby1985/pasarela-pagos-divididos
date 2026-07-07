@@ -42,6 +42,16 @@ class SPG_Rest_Api {
 						'type'              => 'integer',
 						'sanitize_callback' => 'absint',
 					),
+					'shipping_method' => array(
+						'required'          => false,
+						'type'              => 'string',
+						'sanitize_callback' => 'sanitize_key',
+					),
+					'total_method' => array(
+						'required'          => false,
+						'type'              => 'string',
+						'sanitize_callback' => 'sanitize_key',
+					),
 				),
 			)
 		);
@@ -64,7 +74,42 @@ class SPG_Rest_Api {
 			)
 		);
 
-		// Unified webhook receiver.
+		// QR Transfer: generate / refresh a QR code for a payment section.
+		register_rest_route(
+			self::NAMESPACE,
+			'/qr/generate',
+			array(
+				'methods'             => WP_REST_Server::CREATABLE,
+				'callback'            => array( $instance, 'generate_qr' ),
+				'permission_callback' => array( $instance, 'is_authenticated' ),
+				'args'                => array(
+					'order_id' => array(
+						'required'          => true,
+						'type'              => 'integer',
+						'sanitize_callback' => 'absint',
+					),
+					'section' => array(
+						'required'          => true,
+						'type'              => 'string',
+						'enum'              => array( 'shipping', 'total' ),
+						'sanitize_callback' => 'sanitize_key',
+					),
+				),
+			)
+		);
+
+		// QR Transfer: webhook to confirm a payment externally.
+		register_rest_route(
+			self::NAMESPACE,
+			'/webhooks/qr-transfer',
+			array(
+				'methods'             => WP_REST_Server::CREATABLE,
+				'callback'            => array( $instance, 'handle_qr_webhook' ),
+				'permission_callback' => '__return_true', // Signature validated inside.
+			)
+		);
+
+		// Unified webhook receiver for traditional gateways.
 		register_rest_route(
 			self::NAMESPACE,
 			'/webhooks/(?P<gateway>[a-z0-9\-]+)',
@@ -130,10 +175,19 @@ class SPG_Rest_Api {
 			return new WP_Error( 'spg_forbidden', __( 'Access denied.', 'split-payment-gateway' ), array( 'status' => 403 ) );
 		}
 
+		// Collect optional method choices from the frontend.
+		$method_choices = array();
+		if ( $request->get_param( 'shipping_method' ) ) {
+			$method_choices['shipping_method'] = $request->get_param( 'shipping_method' );
+		}
+		if ( $request->get_param( 'total_method' ) ) {
+			$method_choices['total_method'] = $request->get_param( 'total_method' );
+		}
+
 		try {
 			$service   = $this->get_service();
 			$client_id = $this->get_client_id();
-			$result    = $service->initiate( $order, $client_id );
+			$result    = $service->initiate( $order, $client_id, $method_choices );
 
 			return rest_ensure_response( array(
 				'success' => true,
@@ -143,6 +197,120 @@ class SPG_Rest_Api {
 			$this->log_error( 'REST initiate error.', array( 'error' => $e->getMessage() ) );
 			return new WP_Error( 'spg_initiate_error', $e->getMessage(), array( 'status' => 500 ) );
 		}
+	}
+
+	/**
+	 * POST /spg/v1/qr/generate
+	 *
+	 * Returns fresh QR data for a specific payment section of an existing order.
+	 * Used when the customer requests a new QR (e.g. after expiry) without
+	 * re-initiating the entire payment session.
+	 *
+	 * @param WP_REST_Request $request Incoming request.
+	 * @return WP_REST_Response|WP_Error
+	 */
+	public function generate_qr( WP_REST_Request $request ) {
+		$order_id = $request->get_param( 'order_id' );
+		$section  = $request->get_param( 'section' ); // 'shipping' or 'total'
+		$order    = wc_get_order( $order_id );
+
+		if ( ! $order ) {
+			return new WP_Error( 'spg_invalid_order', __( 'Order not found.', 'split-payment-gateway' ), array( 'status' => 404 ) );
+		}
+
+		if ( $order->get_user_id() !== get_current_user_id() && ! current_user_can( 'manage_woocommerce' ) ) {
+			return new WP_Error( 'spg_forbidden', __( 'Access denied.', 'split-payment-gateway' ), array( 'status' => 403 ) );
+		}
+
+		global $wpdb;
+
+		// Verify that the section uses QR Transfer.
+		$meta_key = ( 'shipping' === $section ) ? '_spg_shipping_method_type' : '_spg_total_method_type';
+		$method_type = $order->get_meta( $meta_key );
+
+		if ( 'qr_transfer' !== $method_type ) {
+			return new WP_Error(
+				'spg_not_qr',
+				__( 'This payment section does not use QR Transfer.', 'split-payment-gateway' ),
+				array( 'status' => 400 )
+			);
+		}
+
+		// Look up existing QR record.
+		$tx_meta_key  = ( 'shipping' === $section ) ? '_spg_shipping_tx_id' : '_spg_total_tx_id';
+		$existing_hash = $order->get_meta( $tx_meta_key );
+
+		if ( $existing_hash ) {
+			try {
+				$adapter    = SPG_Gateway_Adapter_Factory::instance()->get_adapter( 'qr_transfer' );
+				$qr_record  = $adapter->get_qr_record( $existing_hash );
+
+				if ( $qr_record && 'pending' === $qr_record['status'] && strtotime( $qr_record['expires_at'] ) > time() ) {
+					// Return existing valid QR.
+					return rest_ensure_response( array(
+						'success'    => true,
+						'qr_data'    => json_decode( $qr_record['qr_payload'], true ),
+						'expires_at' => strtotime( $qr_record['expires_at'] ),
+						'status'     => 'pending',
+					) );
+				}
+			} catch ( Exception $e ) {
+				// Fall through to generate a new QR.
+			}
+		}
+
+		// Generate a fresh QR.
+		try {
+			$client_id = $this->get_client_id();
+			$service   = $this->get_service();
+			$result    = $service->initiate( $order, $client_id, array(
+				'shipping_method' => ( 'shipping' === $section ) ? 'qr_transfer' : null,
+				'total_method'    => ( 'total' === $section )    ? 'qr_transfer' : null,
+			) );
+
+			$qr_data    = ( 'shipping' === $section ) ? $result['shipping_qr_data']    : $result['total_qr_data'];
+			$expires_at = ( 'shipping' === $section ) ? $result['shipping_expires_at'] : $result['total_expires_at'];
+
+			return rest_ensure_response( array(
+				'success'    => true,
+				'qr_data'    => $qr_data,
+				'expires_at' => $expires_at,
+				'status'     => 'pending',
+			) );
+
+		} catch ( Exception $e ) {
+			$this->log_error( 'QR generate error.', array( 'error' => $e->getMessage() ) );
+			return new WP_Error( 'spg_qr_error', $e->getMessage(), array( 'status' => 500 ) );
+		}
+	}
+
+	/**
+	 * POST /spg/v1/webhooks/qr-transfer
+	 *
+	 * Dedicated webhook for QR Transfer payment confirmations.
+	 * This is a convenience alias; the generic /webhooks/{gateway} route
+	 * also handles 'qr-transfer' (slug 'qr_transfer').
+	 *
+	 * Expected JSON body: { transaction_id, order_ref, amount, status, event }
+	 *
+	 * @param WP_REST_Request $request Incoming request.
+	 * @return WP_REST_Response|WP_Error
+	 */
+	public function handle_qr_webhook( WP_REST_Request $request ) {
+		$raw_body = $request->get_body();
+		$headers  = $this->extract_headers( $request );
+
+		global $wpdb;
+		$factory      = SPG_Gateway_Adapter_Factory::instance();
+		$orchestrator = new SPG_Webhook_Orchestrator( $wpdb, $factory );
+
+		$result      = $orchestrator->process( 'qr_transfer', $raw_body, $headers );
+		$status_code = $result['success'] ? 200 : 400;
+
+		return new WP_REST_Response( array(
+			'success' => $result['success'],
+			'message' => $result['message'],
+		), $status_code );
 	}
 
 	/**

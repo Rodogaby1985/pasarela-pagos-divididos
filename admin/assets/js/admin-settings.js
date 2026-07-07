@@ -124,6 +124,21 @@
         });
     });
 
+    // ── QR Transfer settings ──────────────────────────────────────────────────
+    $('#spg-save-qr-settings').on('click', function () {
+        const data = {
+            qr_alias_subtotal : $('#spg-qr-alias-subtotal').val(),
+            qr_alias_shipping : $('#spg-qr-alias-shipping').val(),
+            qr_country        : $('#spg-qr-country').val(),
+            qr_webhook_secret : $('#spg-qr-webhook-secret').val(),
+        };
+        ajaxAction('spg_save_qr_settings', data, function () {
+            showNotice(i18n.saved, 'success');
+            // Clear the secret field so it is not accidentally re-submitted.
+            $('#spg-qr-webhook-secret').val('');
+        });
+    });
+
     // ── Helpers ───────────────────────────────────────────────────────────────
 
     function ajaxAction(action, data, onSuccess) {

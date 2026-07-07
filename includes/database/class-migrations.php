@@ -12,7 +12,7 @@ class SPG_Migrations {
 	use SPG_Logger;
 
 	/** Current schema version. */
-	const SCHEMA_VERSION = '1.0.0';
+	const SCHEMA_VERSION = '1.1.0';
 
 	/**
 	 * Run all pending migrations.
@@ -21,7 +21,46 @@ class SPG_Migrations {
 	public static function run() {
 		$instance = new self();
 		$instance->create_tables();
+		$instance->run_upgrades();
 		update_option( 'spg_version', self::SCHEMA_VERSION );
+	}
+
+	/**
+	 * Run upgrade migrations for existing installations.
+	 */
+	private function run_upgrades() {
+		$installed_version = get_option( 'spg_version', '1.0.0' );
+
+		if ( version_compare( $installed_version, '1.1.0', '<' ) ) {
+			$this->upgrade_to_1_1_0();
+		}
+	}
+
+	/**
+	 * Upgrade to 1.1.0: add QR Transfer support columns.
+	 */
+	private function upgrade_to_1_1_0() {
+		global $wpdb;
+
+		// Add shipping_method_type and total_method_type to split_payments.
+		$table = $wpdb->prefix . 'spg_split_payments';
+		$cols  = $wpdb->get_col( "DESCRIBE `{$table}`" ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+
+		if ( ! in_array( 'shipping_method_type', $cols, true ) ) {
+			$wpdb->query( "ALTER TABLE `{$table}` ADD COLUMN `shipping_method_type` VARCHAR(20) NOT NULL DEFAULT 'gateway' AFTER `shipping_gateway`" ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+		}
+
+		if ( ! in_array( 'total_method_type', $cols, true ) ) {
+			$wpdb->query( "ALTER TABLE `{$table}` ADD COLUMN `total_method_type` VARCHAR(20) NOT NULL DEFAULT 'gateway' AFTER `total_gateway`" ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+		}
+
+		// Add qr_alias_shipping and qr_alias_total to client_gateways.
+		$gw_table = $wpdb->prefix . 'spg_client_gateways';
+		$gw_cols  = $wpdb->get_col( "DESCRIBE `{$gw_table}`" ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+
+		if ( ! in_array( 'qr_alias', $gw_cols, true ) ) {
+			$wpdb->query( "ALTER TABLE `{$gw_table}` ADD COLUMN `qr_alias` VARCHAR(100) DEFAULT NULL COMMENT 'Bank alias / CBU / CVU for QR Transfer'" ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+		}
 	}
 
 	/**
@@ -149,6 +188,29 @@ class SPG_Migrations {
 		dbDelta( $sql_client_gateways );
 		dbDelta( $sql_webhook_logs );
 		dbDelta( $sql_reconciliation );
+
+		// ── 6. QR Transfers ────────────────────────────────────────────────────
+		$sql_qr_transfers = "CREATE TABLE IF NOT EXISTS `{$wpdb->prefix}spg_qr_transfers` (
+			`id`           BIGINT(20)    UNSIGNED NOT NULL AUTO_INCREMENT,
+			`order_ref`    VARCHAR(255)  NOT NULL              COMMENT 'Internal order reference (e.g. 123-shipping)',
+			`alias`        VARCHAR(100)  NOT NULL DEFAULT ''   COMMENT 'Bank alias / CBU / CVU',
+			`amount`       DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+			`currency`     CHAR(3)       NOT NULL DEFAULT 'ARS',
+			`concept`      VARCHAR(255)  NOT NULL DEFAULT '',
+			`qr_hash`      VARCHAR(64)   NOT NULL              COMMENT 'SHA-256 HMAC used as transaction_id',
+			`qr_payload`   LONGTEXT      DEFAULT NULL          COMMENT 'Full JSON payload encoded in QR',
+			`status`       ENUM('pending','confirmed','expired','cancelled','refunded') NOT NULL DEFAULT 'pending',
+			`expires_at`   DATETIME      NOT NULL,
+			`confirmed_at` DATETIME      DEFAULT NULL,
+			`created_at`   DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
+			PRIMARY KEY  (`id`),
+			UNIQUE KEY `qr_hash` (`qr_hash`),
+			KEY `order_ref`    (`order_ref`(100)),
+			KEY `status`       (`status`),
+			KEY `expires_at`   (`expires_at`)
+		) $charset_collate;";
+
+		dbDelta( $sql_qr_transfers );
 
 		$this->log_info( 'SPG database tables created/verified.' );
 	}

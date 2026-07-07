@@ -1,0 +1,273 @@
+/* ─── Split Payment Modal – Multi-Method ─────────────────────────────────── */
+
+/* ── Section panels ───────────────────────────────────────────────────────── */
+.spg-section-panel {
+    border: 1px solid #e0e0e0;
+    border-radius: 6px;
+    margin-bottom: 1.25em;
+    overflow: hidden;
+}
+
+.spg-section-header {
+    align-items: center;
+    background: #f7f7f7;
+    border-bottom: 1px solid #e0e0e0;
+    display: flex;
+    gap: 0.5em;
+    padding: 10px 14px;
+}
+
+.spg-section-title {
+    flex: 1;
+    font-weight: 600;
+}
+
+.spg-section-amount {
+    font-weight: 700;
+    margin-right: auto;
+}
+
+/* ── Method selection list ────────────────────────────────────────────────── */
+.spg-method-list {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 8px;
+}
+
+.spg-method-label {
+    align-items: center;
+    border: 2px solid transparent;
+    border-radius: 5px;
+    cursor: pointer;
+    display: flex;
+    gap: 0.6em;
+    padding: 10px 12px;
+    transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.spg-method-label:hover {
+    background: #f0f6ff;
+}
+
+.spg-method-label--selected {
+    background: #e8f0fe;
+    border-color: #2271b1;
+}
+
+.spg-method-radio {
+    flex-shrink: 0;
+}
+
+.spg-method-name {
+    font-size: 0.95em;
+}
+
+.spg-method-badge {
+    border-radius: 3px;
+    font-size: 0.72em;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    padding: 1px 5px;
+    text-transform: uppercase;
+    vertical-align: middle;
+}
+
+.spg-method-badge--qr {
+    background: #00a32a;
+    color: #fff;
+}
+
+/* ── Payment section (after initiation) ──────────────────────────────────── */
+.spg-payment-section {
+    border: 1px solid #e0e0e0;
+    border-radius: 6px;
+    margin-bottom: 1.25em;
+    overflow: hidden;
+    transition: border-color 0.3s ease;
+}
+
+.spg-payment-section--paid {
+    border-color: #00a32a;
+}
+
+.spg-payment-section .spg-section-header {
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.spg-payment-section--paid .spg-section-header {
+    background: #f0fdf4;
+    border-bottom-color: #b5e6c0;
+}
+
+.spg-section-content {
+    padding: 14px;
+}
+
+/* ── QR code panel ────────────────────────────────────────────────────────── */
+.spg-qr-panel {
+    text-align: center;
+}
+
+.spg-qr-canvas-wrap {
+    display: inline-block;
+    margin: 0 auto 0.75em;
+}
+
+.spg-qr-canvas {
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    display: inline-block;
+    padding: 8px;
+    transition: opacity 0.3s ease;
+}
+
+.spg-qr-canvas svg,
+.spg-qr-canvas img {
+    display: block;
+    height: auto;
+    max-width: 220px;
+    width: 220px;
+}
+
+.spg-qr-canvas--expired {
+    filter: blur(4px);
+    opacity: 0.4;
+    pointer-events: none;
+}
+
+.spg-qr-alias {
+    font-size: 0.9em;
+    margin: 0.25em 0 0.5em;
+}
+
+.spg-qr-instruction {
+    color: #555;
+    font-size: 0.88em;
+    margin: 0.25em 0;
+}
+
+.spg-qr-timer {
+    color: #2271b1;
+    font-size: 0.85em;
+    font-variant-numeric: tabular-nums;
+    margin: 0.3em 0;
+}
+
+.spg-qr-timer--expired {
+    color: #d63638;
+}
+
+/* Refresh button */
+.spg-btn-qr-refresh {
+    background: #f0f6ff;
+    border: 1px solid #2271b1;
+    border-radius: 4px;
+    color: #2271b1;
+    cursor: pointer;
+    font-size: 0.85em;
+    margin-top: 0.4em;
+    padding: 0.45em 1em;
+    transition: background 0.15s ease;
+}
+
+.spg-btn-qr-refresh:hover:not(:disabled) {
+    background: #2271b1;
+    color: #fff;
+}
+
+.spg-qr-loading {
+    animation: spg-pulse 1.2s ease-in-out infinite;
+    font-size: 2em;
+    padding: 20px;
+}
+
+/* Fallback text when QR library is unavailable */
+.spg-qr-fallback {
+    text-align: left;
+}
+
+.spg-qr-fallback-label {
+    font-weight: 600;
+    margin-bottom: 0.3em;
+}
+
+.spg-qr-fallback-text {
+    background: #f7f7f7;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 0.75em;
+    overflow-x: auto;
+    padding: 8px;
+    white-space: pre-wrap;
+    word-break: break-all;
+}
+
+.spg-qr-error {
+    color: #d63638;
+    font-size: 0.88em;
+    padding: 8px 0;
+}
+
+/* ── Gateway button ──────────────────────────────────────────────────────── */
+.spg-btn-gateway {
+    background: #2271b1;
+    border: none;
+    border-radius: 4px;
+    color: #fff;
+    cursor: pointer;
+    font-size: 1em;
+    font-weight: 600;
+    padding: 0.75em 1.25em;
+    transition: background 0.2s ease, opacity 0.2s ease;
+    width: 100%;
+}
+
+.spg-btn-gateway:hover:not(:disabled) {
+    background: #135e96;
+}
+
+.spg-btn-gateway:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+}
+
+.spg-btn-gateway small {
+    display: block;
+    font-size: 0.75em;
+    font-weight: 400;
+    margin-top: 2px;
+    opacity: 0.85;
+}
+
+/* ── Error notice ────────────────────────────────────────────────────────── */
+.spg-error-notice {
+    background: #fcf0f1;
+    border: 1px solid #d63638;
+    border-radius: 4px;
+    color: #d63638;
+    font-size: 0.9em;
+    margin-top: 1em;
+    padding: 10px 14px;
+}
+
+/* ── Wider modal for multi-method ────────────────────────────────────────── */
+.spg-modal--select,
+.spg-modal--pay {
+    max-width: 600px;
+}
+
+/* ── Responsive ──────────────────────────────────────────────────────────── */
+@media (max-width: 480px) {
+    .spg-qr-canvas svg,
+    .spg-qr-canvas img {
+        max-width: 180px;
+        width: 180px;
+    }
+
+    .spg-modal--select,
+    .spg-modal--pay {
+        max-width: 96%;
+    }
+}

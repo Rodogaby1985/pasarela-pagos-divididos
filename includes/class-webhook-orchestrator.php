@@ -81,6 +81,9 @@ class SPG_Webhook_Orchestrator {
 	/**
 	 * Update the split payment record based on a webhook event.
 	 *
+	 * Handles both traditional gateway events (shipping_tx_id / total_tx_id)
+	 * and QR Transfer events (qr_hash stored in spg_qr_transfers).
+	 *
 	 * @param string $gateway_name Gateway slug.
 	 * @param array  $event        Parsed webhook event.
 	 * @param int    $log_id       Webhook log ID for FK reference.
@@ -88,6 +91,30 @@ class SPG_Webhook_Orchestrator {
 	private function update_payment_status( $gateway_name, array $event, $log_id ) {
 		$tx_id  = $event['transaction_id'];
 		$status = $event['status'];
+
+		// For QR Transfers, confirm the QR record first.
+		if ( 'qr_transfer' === $gateway_name && 'approved' === $status ) {
+			$qr_row = $this->db->get_row(
+				$this->db->prepare(
+					"SELECT * FROM `{$this->db->prefix}spg_qr_transfers`
+					 WHERE qr_hash = %s AND status = 'pending'
+					 LIMIT 1",
+					$tx_id
+				),
+				ARRAY_A
+			);
+
+			if ( $qr_row ) {
+				$this->db->update(
+					$this->db->prefix . 'spg_qr_transfers',
+					array(
+						'status'       => 'confirmed',
+						'confirmed_at' => current_time( 'mysql', true ),
+					),
+					array( 'id' => $qr_row['id'] )
+				);
+			}
+		}
 
 		// Find the split payment that owns this transaction.
 		$payment = $this->db->get_row(

@@ -100,6 +100,7 @@ class SPG_Gateway_Adapter_Factory implements SPG_Gateway_Adapter_Factory_Interfa
 		self::register( 'nave',        'SPG_Nave_Adapter' );
 		self::register( 'stripe',      'SPG_Stripe_Adapter' );
 		self::register( 'paypal',      'SPG_PayPal_Adapter' );
+		self::register( 'qr_transfer', 'SPG_QR_Transfer_Adapter' );
 
 		/**
 		 * Fires after default adapters are registered.
