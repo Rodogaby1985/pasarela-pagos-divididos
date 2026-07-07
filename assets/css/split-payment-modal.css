@@ -1,0 +1,141 @@
+/* ─── Split Payment Modal – Frontend ─────────────────────────────────────── */
+
+/* Overlay */
+.spg-overlay {
+    background: rgba(0, 0, 0, 0.6);
+    bottom: 0;
+    left: 0;
+    position: fixed;
+    right: 0;
+    top: 0;
+    z-index: 99998;
+}
+
+/* Modal container */
+.spg-modal {
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
+    font-family: inherit;
+    left: 50%;
+    max-width: 520px;
+    padding: 2em;
+    position: fixed;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    width: 92%;
+    z-index: 99999;
+}
+
+.spg-modal h2 {
+    border-bottom: 1px solid #eee;
+    font-size: 1.4em;
+    margin: 0 0 1em;
+    padding-bottom: 0.5em;
+}
+
+/* Summary table */
+.spg-summary {
+    border-collapse: collapse;
+    margin-bottom: 1.5em;
+    width: 100%;
+}
+
+.spg-summary td {
+    padding: 6px 4px;
+    vertical-align: middle;
+}
+
+.spg-summary .spg-label   { color: #555; }
+.spg-summary .spg-amount  { font-weight: 600; text-align: right; }
+.spg-summary .spg-gateway {
+    color: #888;
+    font-size: 0.82em;
+    text-align: right;
+}
+
+.spg-summary .spg-row-total .spg-label,
+.spg-summary .spg-row-total .spg-amount {
+    border-top: 2px solid #eee;
+    padding-top: 10px;
+}
+
+/* Status indicators */
+.spg-status-row {
+    align-items: center;
+    border-radius: 6px;
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 0.75em;
+    padding: 10px 14px;
+}
+
+.spg-status-row:nth-child(odd) { background: #f9f9f9; }
+
+.spg-status-label { font-weight: 500; }
+
+.spg-indicator {
+    border-radius: 50%;
+    display: inline-flex;
+    font-size: 1.3em;
+    height: 30px;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+}
+
+.spg-indicator.loading { animation: spg-pulse 1.2s ease-in-out infinite; }
+.spg-indicator.success { color: #00a32a; }
+.spg-indicator.error   { color: #d63638; }
+
+@keyframes spg-pulse {
+    0%, 100% { opacity: 1; }
+    50%       { opacity: 0.35; }
+}
+
+/* Buttons */
+.spg-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6em;
+    margin-top: 1.5em;
+}
+
+.spg-btn {
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 1em;
+    font-weight: 600;
+    padding: 0.75em 1em;
+    transition: background 0.2s ease, opacity 0.2s ease;
+    width: 100%;
+}
+
+.spg-btn-shipping {
+    background: #f3f3f3;
+    border: 2px solid #c3c4c7;
+    color: #1d2327;
+}
+
+.spg-btn-total {
+    background: #2271b1;
+    color: #fff;
+}
+
+.spg-btn-finalize {
+    background: #00a32a;
+    color: #fff;
+}
+
+.spg-btn:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+}
+
+.spg-btn:not(:disabled):hover { opacity: 0.88; }
+
+/* Responsive */
+@media (max-width: 480px) {
+    .spg-modal { padding: 1.2em; }
+}

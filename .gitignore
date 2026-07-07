@@ -1,0 +1,28 @@
+# Dependencies
+/vendor/
+/node_modules/
+
+# Build output
+/assets/js/*.min.js
+/assets/css/*.min.css
+/admin/assets/js/*.min.js
+/admin/assets/css/*.min.css
+
+# Environment
+.env
+
+# Composer lock (keep composer.json but optional lock for plugins)
+# composer.lock
+
+# PHPUnit
+/.phpunit.result.cache
+/phpunit.xml
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+*.swp
