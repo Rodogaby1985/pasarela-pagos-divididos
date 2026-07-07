@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<!--
+  payment-modal-multi-method.html
+  Standalone HTML reference for the Split Payment Multi-Method Modal.
+  In production this is rendered dynamically by split-payment-modal-multi-method.js.
+  This file is provided for design reference and prototyping.
+-->
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Split Payment – Multi-Method</title>
+    <link rel="stylesheet" href="../css/split-payment-modal.css">
+    <link rel="stylesheet" href="../css/split-payment-modal-multi-method.css">
+    <style>
+        body { background: #f0f0f0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+        .demo-note { text-align:center; padding:8px; font-size:12px; color:#888; }
+    </style>
+</head>
+<body>
+
+<p class="demo-note">
+    ℹ️ This is a static design reference. In production the modal is rendered by JavaScript.
+</p>
+
+<div class="spg-overlay" id="spg-overlay"></div>
+
+<div class="spg-modal spg-modal-multi" id="spg-modal" role="dialog" aria-modal="true"
+     aria-label="Confirmar Pago">
+
+    <h2 class="spg-modal-title">🔒 Confirmar Pago</h2>
+
+    <!-- ── SUBTOTAL Section ────────────────────────────────────────────── -->
+    <div class="spg-payment-section" id="spg-section-total" data-section="total">
+        <div class="spg-section-header">
+            <span class="spg-section-label">🛒 Subtotal</span>
+            <span class="spg-section-amount" id="spg-total-amount">$100.00</span>
+        </div>
+
+        <p class="spg-section-subtitle">¿Cómo deseas pagar?</p>
+
+        <div class="spg-method-options">
+
+            <!-- QR Transfer -->
+            <div class="spg-method-option" id="spg-total-option-qr">
+                <label class="spg-method-label">
+                    <input type="radio" name="spg-total-method" value="qr_transfer">
+                    <span class="spg-method-icon">📱</span>
+                    <span class="spg-method-info">
+                        <strong>QR Transfer</strong>
+                        <small>Escanea con tu app bancaria – Sin comisión</small>
+                    </span>
+                </label>
+
+                <div class="spg-qr-panel" id="spg-total-qr-panel" style="display:none;">
+                    <div class="spg-qr-image-wrap">
+                        <div class="spg-qr-image" id="spg-total-qr-image">
+                            <!-- QR image rendered by JS -->
+                            <canvas id="spg-total-qr-canvas" width="200" height="200"></canvas>
+                        </div>
+                        <div class="spg-qr-fallback" id="spg-total-qr-fallback" style="display:none;">
+                            <p><strong>Transferí a:</strong></p>
+                            <p>Alias: <code id="spg-total-qr-alias">tienda.empresa.ar</code>
+                               <button class="spg-copy-btn" data-target="spg-total-qr-alias">📋</button>
+                            </p>
+                            <p>Monto: <code id="spg-total-qr-amount">$100.00</code></p>
+                            <p>Concepto: <code id="spg-total-qr-concept">Orden #123</code></p>
+                        </div>
+                    </div>
+                    <div class="spg-qr-timer" id="spg-total-qr-timer">
+                        ⏱ Expira en <span id="spg-total-qr-countdown">15:00</span>
+                    </div>
+                    <button class="button spg-qr-refresh-btn" id="spg-total-qr-refresh" style="display:none;">
+                        🔄 Renovar QR
+                    </button>
+                </div>
+            </div>
+
+            <!-- MercadoPago -->
+            <div class="spg-method-option" id="spg-total-option-mp">
+                <label class="spg-method-label">
+                    <input type="radio" name="spg-total-method" value="mercadopago">
+                    <span class="spg-method-icon">💙</span>
+                    <span class="spg-method-info">
+                        <strong>MercadoPago</strong>
+                        <small>Tarjeta, billetera digital o transferencia</small>
+                    </span>
+                </label>
+                <div class="spg-gateway-panel" id="spg-total-mp-panel" style="display:none;">
+                    <button class="button button-primary spg-pay-btn" id="spg-pay-total-mp">
+                        💙 Pagar con MercadoPago
+                    </button>
+                </div>
+            </div>
+
+        </div>
+
+        <div class="spg-section-status" id="spg-total-status">
+            <span class="spg-indicator spg-indicator-pending" id="spg-total-indicator">⏳</span>
+            <span class="spg-status-text" id="spg-total-status-text">Esperando pago…</span>
+        </div>
+    </div>
+
+    <hr class="spg-section-divider">
+
+    <!-- ── ENVÍO Section ───────────────────────────────────────────────── -->
+    <div class="spg-payment-section" id="spg-section-shipping" data-section="shipping">
+        <div class="spg-section-header">
+            <span class="spg-section-label">🚚 Envío</span>
+            <span class="spg-section-amount" id="spg-shipping-amount">$15.00</span>
+        </div>
+
+        <p class="spg-section-subtitle">¿Cómo deseas pagar?</p>
+
+        <div class="spg-method-options">
+
+            <!-- QR Transfer -->
+            <div class="spg-method-option" id="spg-shipping-option-qr">
+                <label class="spg-method-label">
+                    <input type="radio" name="spg-shipping-method" value="qr_transfer">
+                    <span class="spg-method-icon">📱</span>
+                    <span class="spg-method-info">
+                        <strong>QR Transfer</strong>
+                        <small>Escanea con tu app bancaria – Sin comisión</small>
+                    </span>
+                </label>
+
+                <div class="spg-qr-panel" id="spg-shipping-qr-panel" style="display:none;">
+                    <div class="spg-qr-image-wrap">
+                        <div class="spg-qr-image" id="spg-shipping-qr-image">
+                            <canvas id="spg-shipping-qr-canvas" width="200" height="200"></canvas>
+                        </div>
+                        <div class="spg-qr-fallback" id="spg-shipping-qr-fallback" style="display:none;">
+                            <p><strong>Transferí a:</strong></p>
+                            <p>Alias: <code id="spg-shipping-qr-alias">operador.logistico.ar</code>
+                               <button class="spg-copy-btn" data-target="spg-shipping-qr-alias">📋</button>
+                            </p>
+                            <p>Monto: <code id="spg-shipping-qr-amount">$15.00</code></p>
+                            <p>Concepto: <code id="spg-shipping-qr-concept">Envío Orden #123</code></p>
+                        </div>
+                    </div>
+                    <div class="spg-qr-timer" id="spg-shipping-qr-timer">
+                        ⏱ Expira en <span id="spg-shipping-qr-countdown">15:00</span>
+                    </div>
+                    <button class="button spg-qr-refresh-btn" id="spg-shipping-qr-refresh" style="display:none;">
+                        🔄 Renovar QR
+                    </button>
+                </div>
+            </div>
+
+            <!-- MercadoPago -->
+            <div class="spg-method-option" id="spg-shipping-option-mp">
+                <label class="spg-method-label">
+                    <input type="radio" name="spg-shipping-method" value="mercadopago">
+                    <span class="spg-method-icon">💙</span>
+                    <span class="spg-method-info">
+                        <strong>MercadoPago</strong>
+                        <small>Tarjeta, billetera digital o transferencia</small>
+                    </span>
+                </label>
+                <div class="spg-gateway-panel" id="spg-shipping-mp-panel" style="display:none;">
+                    <button class="button button-primary spg-pay-btn" id="spg-pay-shipping-mp">
+                        💙 Pagar con MercadoPago
+                    </button>
+                </div>
+            </div>
+
+        </div>
+
+        <div class="spg-section-status" id="spg-shipping-status">
+            <span class="spg-indicator spg-indicator-pending" id="spg-shipping-indicator">⏳</span>
+            <span class="spg-status-text" id="spg-shipping-status-text">Esperando pago…</span>
+        </div>
+    </div>
+
+    <hr class="spg-section-divider">
+
+    <!-- ── Global status summary ───────────────────────────────────────── -->
+    <div class="spg-status-summary" id="spg-status-summary">
+        <div class="spg-summary-row">
+            <span>🛒 Subtotal</span>
+            <span id="spg-summary-total-icon">⏳</span>
+        </div>
+        <div class="spg-summary-row">
+            <span>🚚 Envío</span>
+            <span id="spg-summary-shipping-icon">⏳</span>
+        </div>
+    </div>
+
+    <!-- ── Action buttons ──────────────────────────────────────────────── -->
+    <div class="spg-buttons">
+        <button class="button button-primary spg-btn-finalize" id="spg-finalize" disabled>
+            🔒 Finalizar Pedido
+        </button>
+    </div>
+
+    <!-- Error / notice area -->
+    <div class="spg-modal-notice" id="spg-modal-notice" style="display:none;"></div>
+
+</div><!-- /.spg-modal -->
+
+<!-- Prototype interaction -->
+<script>
+    // Simulate method selection toggling.
+    document.querySelectorAll('input[type="radio"]').forEach(function (radio) {
+        radio.addEventListener('change', function () {
+            var section = this.name.replace('spg-', '').replace('-method', '');
+            var val = this.value;
+
+            // Hide all panels in this section.
+            document.querySelectorAll('#spg-section-' + section + ' .spg-qr-panel,' +
+                                      '#spg-section-' + section + ' .spg-gateway-panel')
+                .forEach(function (el) { el.style.display = 'none'; });
+
+            // Show the relevant panel.
+            if (val === 'qr_transfer') {
+                var panel = document.getElementById('spg-' + section + '-qr-panel');
+                if (panel) {
+                    panel.style.display = 'block';
+                    // Show fallback for prototype.
+                    var fb = document.getElementById('spg-' + section + '-qr-fallback');
+                    if (fb) fb.style.display = 'block';
+                }
+            } else {
+                var mpPanel = document.getElementById('spg-' + section + '-mp-panel');
+                if (mpPanel) mpPanel.style.display = 'block';
+            }
+        });
+    });
+</script>
+</body>
+</html>
