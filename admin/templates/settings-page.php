@@ -145,9 +145,9 @@ defined( 'ABSPATH' ) || exit;
 				<th><label for="spg-qr-alias-subtotal"><?php esc_html_e( 'Subtotal Alias (store)', 'split-payment-gateway' ); ?></label></th>
 				<td>
 					<input type="text" id="spg-qr-alias-subtotal" name="qr_alias_subtotal"
-						   class="regular-text"
-						   value="<?php echo esc_attr( $qr_settings['qr_alias_subtotal'] ?? '' ); ?>"
-						   placeholder="tienda.empresa">
+							class="regular-text"
+							value="<?php echo esc_attr( $qr_settings['qr_alias_subtotal'] ?? '' ); ?>"
+							placeholder="tienda.empresa">
 					<p class="description">
 						<?php esc_html_e( 'CBU, CVU, or alias for the store account. Customers use this to pay for products.', 'split-payment-gateway' ); ?>
 					</p>
@@ -157,9 +157,9 @@ defined( 'ABSPATH' ) || exit;
 				<th><label for="spg-qr-alias-shipping"><?php esc_html_e( 'Shipping Alias (logistics)', 'split-payment-gateway' ); ?></label></th>
 				<td>
 					<input type="text" id="spg-qr-alias-shipping" name="qr_alias_shipping"
-						   class="regular-text"
-						   value="<?php echo esc_attr( $qr_settings['qr_alias_shipping'] ?? '' ); ?>"
-						   placeholder="operador.logistico">
+							class="regular-text"
+							value="<?php echo esc_attr( $qr_settings['qr_alias_shipping'] ?? '' ); ?>"
+							placeholder="operador.logistico">
 					<p class="description">
 						<?php esc_html_e( 'CBU, CVU, or alias for the logistics operator account. Customers use this to pay for shipping.', 'split-payment-gateway' ); ?>
 					</p>
@@ -188,9 +188,9 @@ defined( 'ABSPATH' ) || exit;
 				<th><label for="spg-qr-webhook-secret"><?php esc_html_e( 'Webhook Secret', 'split-payment-gateway' ); ?></label></th>
 				<td>
 					<input type="password" id="spg-qr-webhook-secret" name="qr_webhook_secret"
-						   class="regular-text"
-						   placeholder="<?php echo esc_attr( $qr_settings['qr_webhook_secret'] ? '••••••••' : '' ); ?>"
-						   autocomplete="new-password">
+							class="regular-text"
+							placeholder="<?php echo esc_attr( $qr_settings['qr_webhook_secret'] ? '••••••••' : '' ); ?>"
+							autocomplete="new-password">
 					<p class="description">
 						<?php esc_html_e( 'HMAC-SHA256 secret used to validate QR Transfer webhook notifications. Leave blank to keep existing value.', 'split-payment-gateway' ); ?>
 					</p>
@@ -225,14 +225,14 @@ defined( 'ABSPATH' ) || exit;
 		</p>
 		<pre style="background:#f7f7f7;padding:12px;border:1px solid #ddd;border-radius:4px;">
 {
-  "v":       "1",            // schema version
-  "alias":   "tienda.mp",   // configured alias
-  "amount":  "100.00",
-  "currency":"ARS",
-  "concept": "Orden #123",
-  "ref":     "123-total",   // internal reference
-  "exp":     1700000000,    // expiry (Unix timestamp)
-  "hash":    "sha256..."    // HMAC-SHA256 integrity hash
+	"v":       "1",            // schema version
+	"alias":   "tienda.mp",   // configured alias
+	"amount":  "100.00",
+	"currency":"ARS",
+	"concept": "Orden #123",
+	"ref":     "123-total",   // internal reference
+	"exp":     1700000000,    // expiry (Unix timestamp)
+	"hash":    "sha256..."    // HMAC-SHA256 integrity hash
 }</pre>
 	</div><!-- /tab-qr -->
 

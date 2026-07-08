@@ -81,5 +81,5 @@ if ( ! class_exists( 'WP_Error' ) ) {
 // ── Plugin traits ──────────────────────────────────────────────────────────
 require_once $plugin_dir . '/includes/traits/trait-logger.php';
 require_once $plugin_dir . '/includes/traits/trait-security.php';
-require_once $plugin_dir . '/includes/adapters/class-base-adapter.php';
+require_once $plugin_dir . '/includes/adapters/class-spg-base-adapter.php';
 require_once $plugin_dir . '/includes/class-gateway-adapter-factory-interface.php';

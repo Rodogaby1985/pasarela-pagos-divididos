@@ -15,7 +15,7 @@ $plugin_dir = dirname( __DIR__ );
 // Traits and main class under test (bootstrap.php may have already loaded traits).
 require_once $plugin_dir . '/includes/traits/trait-logger.php';
 require_once $plugin_dir . '/includes/traits/trait-security.php';
-require_once $plugin_dir . '/includes/class-split-distribution-engine.php';
+require_once $plugin_dir . '/includes/class-spg-split-distribution-engine.php';
 
 // WordPress stubs (guarded so bootstrap.php stubs take precedence).
 if ( ! function_exists( 'wp_json_encode' ) ) {

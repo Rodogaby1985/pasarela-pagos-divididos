@@ -8,7 +8,11 @@
  */
 
 defined( 'ABSPATH' ) || exit;
+// phpcs:disable Generic.Commenting.DocComment.MissingShort,WordPress.WP.I18n.MissingTranslatorsComment
 
+/**
+ * Webhook orchestrator for all providers.
+ */
 class SPG_Webhook_Orchestrator {
 
 	use SPG_Logger;
@@ -51,7 +55,10 @@ class SPG_Webhook_Orchestrator {
 			if ( ! $adapter->verify_webhook( $raw_body, $headers ) ) {
 				$this->update_webhook_log( $log_id, false, 'Invalid webhook signature.' );
 				$this->log_warning( 'Invalid webhook signature.', array( 'gateway' => $gateway_name ) );
-				return array( 'success' => false, 'message' => 'Invalid signature.' );
+				return array(
+					'success' => false,
+					'message' => 'Invalid signature.',
+				);
 			}
 
 			// Parse event.
@@ -59,22 +66,34 @@ class SPG_Webhook_Orchestrator {
 
 			if ( empty( $event['transaction_id'] ) ) {
 				$this->update_webhook_log( $log_id, false, 'Missing transaction_id in webhook.' );
-				return array( 'success' => false, 'message' => 'Missing transaction_id.' );
+				return array(
+					'success' => false,
+					'message' => 'Missing transaction_id.',
+				);
 			}
 
 			// Update payment record.
 			$this->update_payment_status( $gateway_name, $event, $log_id );
 
 			$this->update_webhook_log( $log_id, true );
-			return array( 'success' => true, 'message' => 'Webhook processed.' );
+			return array(
+				'success' => true,
+				'message' => 'Webhook processed.',
+			);
 
 		} catch ( Exception $e ) {
-			$this->log_error( 'Webhook processing error.', array(
-				'gateway' => $gateway_name,
-				'error'   => $e->getMessage(),
-			) );
+			$this->log_error(
+				'Webhook processing error.',
+				array(
+					'gateway' => $gateway_name,
+					'error'   => $e->getMessage(),
+				)
+			);
 			$this->update_webhook_log( $log_id, false, $e->getMessage() );
-			return array( 'success' => false, 'message' => $e->getMessage() );
+			return array(
+				'success' => false,
+				'message' => $e->getMessage(),
+			);
 		}
 	}
 
@@ -231,7 +250,10 @@ class SPG_Webhook_Orchestrator {
 		// Update the webhook log with the order ID for cross-reference.
 		$this->db->update(
 			$this->db->prefix . 'spg_webhook_logs',
-			array( 'order_id' => $payment['order_id'], 'tx_id' => $tx_id ),
+			array(
+				'order_id' => $payment['order_id'],
+				'tx_id'    => $tx_id,
+			),
 			array( 'id' => $log_id )
 		);
 	}

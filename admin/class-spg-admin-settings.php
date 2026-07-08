@@ -7,12 +7,19 @@
  */
 
 defined( 'ABSPATH' ) || exit;
+// phpcs:disable WordPress.WP.Capabilities.Unknown
 
+/**
+ * Admin settings controller.
+ */
 class SPG_Admin_Settings {
 
 	use SPG_Logger;
 	use SPG_Security;
 
+	/**
+	 * Register admin hooks.
+	 */
 	public function __construct() {
 		add_action( 'admin_menu', array( $this, 'add_menu_pages' ) );
 		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_assets' ) );
@@ -31,6 +38,7 @@ class SPG_Admin_Settings {
 	 * Register admin menu pages.
 	 */
 	public function add_menu_pages() {
+		// phpcs:ignore WordPress.WP.Capabilities.Unknown
 		add_submenu_page(
 			'woocommerce',
 			__( 'Split Payment Settings', 'split-payment-gateway' ),
@@ -40,6 +48,7 @@ class SPG_Admin_Settings {
 			array( $this, 'render_settings_page' )
 		);
 
+		// phpcs:ignore WordPress.WP.Capabilities.Unknown
 		add_submenu_page(
 			'woocommerce',
 			__( 'Split Payment – Gateways', 'split-payment-gateway' ),
@@ -79,18 +88,18 @@ class SPG_Admin_Settings {
 			'spg-admin-js',
 			'spgAdmin',
 			array(
-				'ajaxUrl'   => admin_url( 'admin-ajax.php' ),
-				'nonce'     => wp_create_nonce( 'spg_admin_nonce' ),
-				'gateways'  => $this->get_registered_gateway_list(),
-				'i18n'      => array(
-					'confirmDelete'   => __( 'Are you sure you want to delete this item?', 'split-payment-gateway' ),
-					'saved'           => __( 'Saved successfully.', 'split-payment-gateway' ),
-					'error'           => __( 'An error occurred. Please try again.', 'split-payment-gateway' ),
-					'verifying'       => __( 'Verifying...', 'split-payment-gateway' ),
-					'creating'        => __( 'Creating webhook...', 'split-payment-gateway' ),
-					'webhookCreated'  => __( 'Webhook created successfully.', 'split-payment-gateway' ),
-					'webhookExists'   => __( 'Webhook already exists and is active.', 'split-payment-gateway' ),
-					'credentialsOk'   => __( 'Credentials valid.', 'split-payment-gateway' ),
+				'ajaxUrl'  => admin_url( 'admin-ajax.php' ),
+				'nonce'    => wp_create_nonce( 'spg_admin_nonce' ),
+				'gateways' => $this->get_registered_gateway_list(),
+				'i18n'     => array(
+					'confirmDelete'  => __( 'Are you sure you want to delete this item?', 'split-payment-gateway' ),
+					'saved'          => __( 'Saved successfully.', 'split-payment-gateway' ),
+					'error'          => __( 'An error occurred. Please try again.', 'split-payment-gateway' ),
+					'verifying'      => __( 'Verifying...', 'split-payment-gateway' ),
+					'creating'       => __( 'Creating webhook...', 'split-payment-gateway' ),
+					'webhookCreated' => __( 'Webhook created successfully.', 'split-payment-gateway' ),
+					'webhookExists'  => __( 'Webhook already exists and is active.', 'split-payment-gateway' ),
+					'credentialsOk'  => __( 'Credentials valid.', 'split-payment-gateway' ),
 				),
 			)
 		);
@@ -100,13 +109,14 @@ class SPG_Admin_Settings {
 	 * Render the settings page.
 	 */
 	public function render_settings_page() {
+		// phpcs:ignore WordPress.WP.Capabilities.Unknown
 		if ( ! current_user_can( 'manage_woocommerce' ) ) {
 			wp_die( esc_html__( 'Access denied.', 'split-payment-gateway' ) );
 		}
 
-		$client_id  = sanitize_key( get_option( 'spg_default_client_id', sanitize_key( get_option( 'blogname', 'default' ) ) ) );
-		$gateways   = $this->get_client_gateways( $client_id );
-		$rules      = $this->get_client_rules( $client_id );
+		$client_id   = sanitize_key( get_option( 'spg_default_client_id', sanitize_key( get_option( 'blogname', 'default' ) ) ) );
+		$gateways    = $this->get_client_gateways( $client_id );
+		$rules       = $this->get_client_rules( $client_id );
 		$qr_settings = $this->get_qr_settings();
 
 		include SPG_PLUGIN_DIR . 'admin/templates/settings-page.php';
@@ -116,12 +126,13 @@ class SPG_Admin_Settings {
 	 * Render the dedicated Gateways configuration page.
 	 */
 	public function render_gateways_page() {
+		// phpcs:ignore WordPress.WP.Capabilities.Unknown
 		if ( ! current_user_can( 'manage_woocommerce' ) ) {
 			wp_die( esc_html__( 'Access denied.', 'split-payment-gateway' ) );
 		}
 
-		$mp_settings  = $this->get_mp_settings();
-		$qr_settings  = $this->get_qr_gateways_settings();
+		$mp_settings = $this->get_mp_settings();
+		$qr_settings = $this->get_qr_gateways_settings();
 
 		include SPG_PLUGIN_DIR . 'admin/templates/settings-page-gateways.php';
 	}
@@ -132,15 +143,17 @@ class SPG_Admin_Settings {
 	 * Save or update a gateway configuration.
 	 */
 	public function ajax_save_gateway() {
+		check_ajax_referer( 'spg_admin_nonce', 'nonce' );
 		$this->verify_ajax_nonce();
 
 		global $wpdb;
+		$post_data = wp_unslash( $_POST );
 
-		$client_id    = sanitize_key( $_POST['client_id'] ?? '' );
-		$gateway_name = sanitize_key( $_POST['gateway_name'] ?? '' );
-		$display_name = sanitize_text_field( $_POST['display_name'] ?? '' );
-		$credentials  = $_POST['credentials'] ?? array(); // Array of key => value.
-		$id           = absint( $_POST['id'] ?? 0 );
+		$client_id    = sanitize_key( $post_data['client_id'] ?? '' );
+		$gateway_name = sanitize_key( $post_data['gateway_name'] ?? '' );
+		$display_name = sanitize_text_field( $post_data['display_name'] ?? '' );
+		$credentials  = $post_data['credentials'] ?? array(); // Array of key => value.
+		$id           = absint( $post_data['id'] ?? 0 );
 
 		if ( ! $client_id || ! $gateway_name ) {
 			wp_send_json_error( array( 'message' => __( 'Missing required fields.', 'split-payment-gateway' ) ) );
@@ -159,36 +172,46 @@ class SPG_Admin_Settings {
 			'gateway_name'        => $gateway_name,
 			'display_name'        => $display_name,
 			'credentials'         => $encrypted,
-			'is_default_shipping' => ! empty( $_POST['is_default_shipping'] ) ? 1 : 0,
-			'is_default_total'    => ! empty( $_POST['is_default_total'] )    ? 1 : 0,
+			'is_default_shipping' => ! empty( $post_data['is_default_shipping'] ) ? 1 : 0,
+			'is_default_total'    => ! empty( $post_data['is_default_total'] ) ? 1 : 0,
 			'is_active'           => 1,
-			'fiscal_entity_name'  => sanitize_text_field( $_POST['fiscal_entity_name'] ?? '' ),
-			'fiscal_tax_id'       => sanitize_text_field( $_POST['fiscal_tax_id'] ?? '' ),
-			'fiscal_address'      => sanitize_textarea_field( $_POST['fiscal_address'] ?? '' ),
+			'fiscal_entity_name'  => sanitize_text_field( $post_data['fiscal_entity_name'] ?? '' ),
+			'fiscal_tax_id'       => sanitize_text_field( $post_data['fiscal_tax_id'] ?? '' ),
+			'fiscal_address'      => sanitize_textarea_field( $post_data['fiscal_address'] ?? '' ),
 			'updated_at'          => current_time( 'mysql', true ),
 		);
 
 		if ( $id ) {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
 			$wpdb->update( $wpdb->prefix . 'spg_client_gateways', $data, array( 'id' => $id ) );
 		} else {
 			$data['created_at'] = current_time( 'mysql', true );
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
 			$wpdb->insert( $wpdb->prefix . 'spg_client_gateways', $data );
 			$id = $wpdb->insert_id;
 		}
 
-		wp_send_json_success( array( 'id' => $id, 'message' => __( 'Gateway saved.', 'split-payment-gateway' ) ) );
+		wp_send_json_success(
+			array(
+				'id'      => $id,
+				'message' => __( 'Gateway saved.', 'split-payment-gateway' ),
+			)
+		);
 	}
 
 	/**
 	 * Delete a gateway.
 	 */
 	public function ajax_delete_gateway() {
+		check_ajax_referer( 'spg_admin_nonce', 'nonce' );
 		$this->verify_ajax_nonce();
 
 		global $wpdb;
-		$id = absint( $_POST['id'] ?? 0 );
+		$post_data = wp_unslash( $_POST );
+		$id        = absint( $post_data['id'] ?? 0 );
 
 		if ( $id ) {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
 			$wpdb->update(
 				$wpdb->prefix . 'spg_client_gateways',
 				array( 'is_active' => 0 ),
@@ -203,47 +226,59 @@ class SPG_Admin_Settings {
 	 * Save or update a split rule.
 	 */
 	public function ajax_save_rule() {
+		check_ajax_referer( 'spg_admin_nonce', 'nonce' );
 		$this->verify_ajax_nonce();
 
 		global $wpdb;
+		$post_data = wp_unslash( $_POST );
 
-		$id        = absint( $_POST['id'] ?? 0 );
-		$client_id = sanitize_key( $_POST['client_id'] ?? '' );
+		$id        = absint( $post_data['id'] ?? 0 );
+		$client_id = sanitize_key( $post_data['client_id'] ?? '' );
 
 		$data = array(
 			'client_id'           => $client_id,
-			'rule_name'           => sanitize_text_field( $_POST['rule_name'] ?? '' ),
-			'shipping_gateway'    => sanitize_key( $_POST['shipping_gateway'] ?? '' ),
-			'total_gateway'       => sanitize_key( $_POST['total_gateway'] ?? '' ),
-			'shipping_percentage' => min( 100, max( 0, (float) ( $_POST['shipping_percentage'] ?? 100 ) ) ),
-			'total_percentage'    => min( 100, max( 0, (float) ( $_POST['total_percentage'] ?? 100 ) ) ),
-			'priority'            => absint( $_POST['priority'] ?? 10 ),
-			'is_active'           => ! empty( $_POST['is_active'] ) ? 1 : 0,
+			'rule_name'           => sanitize_text_field( $post_data['rule_name'] ?? '' ),
+			'shipping_gateway'    => sanitize_key( $post_data['shipping_gateway'] ?? '' ),
+			'total_gateway'       => sanitize_key( $post_data['total_gateway'] ?? '' ),
+			'shipping_percentage' => min( 100, max( 0, (float) sanitize_text_field( $post_data['shipping_percentage'] ?? '100' ) ) ),
+			'total_percentage'    => min( 100, max( 0, (float) sanitize_text_field( $post_data['total_percentage'] ?? '100' ) ) ),
+			'priority'            => absint( $post_data['priority'] ?? 10 ),
+			'is_active'           => ! empty( $post_data['is_active'] ) ? 1 : 0,
 			'conditions'          => wp_json_encode( array() ),
 			'updated_at'          => current_time( 'mysql', true ),
 		);
 
 		if ( $id ) {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
 			$wpdb->update( $wpdb->prefix . 'spg_client_split_rules', $data, array( 'id' => $id ) );
 		} else {
 			$data['created_at'] = current_time( 'mysql', true );
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
 			$wpdb->insert( $wpdb->prefix . 'spg_client_split_rules', $data );
 			$id = $wpdb->insert_id;
 		}
 
-		wp_send_json_success( array( 'id' => $id, 'message' => __( 'Rule saved.', 'split-payment-gateway' ) ) );
+		wp_send_json_success(
+			array(
+				'id'      => $id,
+				'message' => __( 'Rule saved.', 'split-payment-gateway' ),
+			)
+		);
 	}
 
 	/**
 	 * Delete a split rule.
 	 */
 	public function ajax_delete_rule() {
+		check_ajax_referer( 'spg_admin_nonce', 'nonce' );
 		$this->verify_ajax_nonce();
 
 		global $wpdb;
-		$id = absint( $_POST['id'] ?? 0 );
+		$post_data = wp_unslash( $_POST );
+		$id        = absint( $post_data['id'] ?? 0 );
 
 		if ( $id ) {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
 			$wpdb->update(
 				$wpdb->prefix . 'spg_client_split_rules',
 				array( 'is_active' => 0 ),
@@ -258,16 +293,18 @@ class SPG_Admin_Settings {
 	 * Save QR Transfer global settings.
 	 */
 	public function ajax_save_qr_settings() {
+		check_ajax_referer( 'spg_admin_nonce', 'nonce' );
 		$this->verify_ajax_nonce();
+		$post_data = wp_unslash( $_POST );
 
-		$alias_subtotal = sanitize_text_field( $_POST['qr_alias_subtotal'] ?? '' );
-		$alias_shipping = sanitize_text_field( $_POST['qr_alias_shipping'] ?? '' );
-		$webhook_secret = sanitize_text_field( $_POST['qr_webhook_secret']  ?? '' );
-		$country        = sanitize_key( $_POST['qr_country']               ?? 'AR' );
+		$alias_subtotal = sanitize_text_field( $post_data['qr_alias_subtotal'] ?? '' );
+		$alias_shipping = sanitize_text_field( $post_data['qr_alias_shipping'] ?? '' );
+		$webhook_secret = sanitize_text_field( $post_data['qr_webhook_secret'] ?? '' );
+		$country        = sanitize_key( $post_data['qr_country'] ?? 'AR' );
 
 		update_option( 'spg_qr_alias_subtotal', $alias_subtotal );
 		update_option( 'spg_qr_alias_shipping', $alias_shipping );
-		update_option( 'spg_qr_country',        strtoupper( $country ) );
+		update_option( 'spg_qr_country', strtoupper( $country ) );
 
 		// Only update the webhook secret if a non-empty value is provided (avoid overwriting).
 		if ( ! empty( $webhook_secret ) ) {
@@ -281,16 +318,18 @@ class SPG_Admin_Settings {
 	 * Save MercadoPago settings (from the dedicated Gateways page).
 	 */
 	public function ajax_save_mp_settings() {
+		check_ajax_referer( 'spg_admin_nonce', 'nonce' );
 		$this->verify_ajax_nonce();
+		$post_data = wp_unslash( $_POST );
 
-		$enabled      = sanitize_key( $_POST['mp_enabled']      ?? 'no' );
-		$sandbox      = sanitize_key( $_POST['mp_sandbox']      ?? 'yes' );
-		$access_token = sanitize_text_field( $_POST['mp_access_token'] ?? '' );
-		$user_id      = sanitize_text_field( $_POST['mp_user_id']      ?? '' );
+		$enabled      = sanitize_key( $post_data['mp_enabled'] ?? 'no' );
+		$sandbox      = sanitize_key( $post_data['mp_sandbox'] ?? 'yes' );
+		$access_token = sanitize_text_field( $post_data['mp_access_token'] ?? '' );
+		$user_id      = sanitize_text_field( $post_data['mp_user_id'] ?? '' );
 
 		update_option( 'spg_mp_enabled', 'yes' === $enabled ? 'yes' : 'no' );
-		update_option( 'spg_mp_sandbox',  'yes' === $sandbox  ? 'yes' : 'no' );
-		update_option( 'spg_mp_user_id',  $user_id );
+		update_option( 'spg_mp_sandbox', 'yes' === $sandbox ? 'yes' : 'no' );
+		update_option( 'spg_mp_user_id', $user_id );
 
 		// Only overwrite the stored (encrypted) token if a new non-empty value is supplied.
 		if ( ! empty( $access_token ) ) {
@@ -305,15 +344,17 @@ class SPG_Admin_Settings {
 	 * Verify MercadoPago credentials via the API.
 	 */
 	public function ajax_verify_mp_credentials() {
+		check_ajax_referer( 'spg_admin_nonce', 'nonce' );
 		$this->verify_ajax_nonce();
+		$post_data = wp_unslash( $_POST );
 
-		$access_token = sanitize_text_field( $_POST['mp_access_token'] ?? '' );
-		$user_id      = sanitize_text_field( $_POST['mp_user_id']      ?? '' );
+		$access_token = sanitize_text_field( $post_data['mp_access_token'] ?? '' );
+		$user_id      = sanitize_text_field( $post_data['mp_user_id'] ?? '' );
 
 		// If no token sent, try to use the stored one.
 		if ( empty( $access_token ) ) {
 			$encrypted    = get_option( 'spg_mp_access_token', '' );
-			$access_token = $encrypted ? (string) $this->decrypt( $encrypted ) : '';
+			$access_token = ! empty( $encrypted ) ? (string) $this->decrypt( $encrypted ) : '';
 		}
 
 		$validator = new SPG_Gateway_Credentials_Validator();
@@ -330,14 +371,16 @@ class SPG_Admin_Settings {
 	 * Create (or verify) a MercadoPago webhook via the API.
 	 */
 	public function ajax_create_mp_webhook() {
+		check_ajax_referer( 'spg_admin_nonce', 'nonce' );
 		$this->verify_ajax_nonce();
+		$post_data = wp_unslash( $_POST );
 
-		$access_token = sanitize_text_field( $_POST['mp_access_token'] ?? '' );
+		$access_token = sanitize_text_field( $post_data['mp_access_token'] ?? '' );
 
 		// Fall back to stored token.
 		if ( empty( $access_token ) ) {
 			$encrypted    = get_option( 'spg_mp_access_token', '' );
-			$access_token = $encrypted ? (string) $this->decrypt( $encrypted ) : '';
+			$access_token = ! empty( $encrypted ) ? (string) $this->decrypt( $encrypted ) : '';
 		}
 
 		$validator = new SPG_Gateway_Credentials_Validator();
@@ -358,24 +401,26 @@ class SPG_Admin_Settings {
 	 * Save QR Transfer settings from the dedicated Gateways page.
 	 */
 	public function ajax_save_qr_gateways_settings() {
+		check_ajax_referer( 'spg_admin_nonce', 'nonce' );
 		$this->verify_ajax_nonce();
+		$post_data = wp_unslash( $_POST );
 
-		$enabled        = sanitize_key( $_POST['qr_enabled']         ?? 'no' );
-		$alias_subtotal = sanitize_text_field( $_POST['qr_alias_subtotal']  ?? '' );
-		$cbu_subtotal   = sanitize_text_field( $_POST['qr_cbu_subtotal']    ?? '' );
-		$holder_subtotal = sanitize_text_field( $_POST['qr_holder_subtotal'] ?? '' );
-		$alias_shipping = sanitize_text_field( $_POST['qr_alias_shipping']  ?? '' );
-		$cbu_shipping   = sanitize_text_field( $_POST['qr_cbu_shipping']    ?? '' );
-		$holder_shipping = sanitize_text_field( $_POST['qr_holder_shipping'] ?? '' );
-		$webhook_secret = sanitize_text_field( $_POST['qr_webhook_secret']  ?? '' );
+		$enabled         = sanitize_key( $post_data['qr_enabled'] ?? 'no' );
+		$alias_subtotal  = sanitize_text_field( $post_data['qr_alias_subtotal'] ?? '' );
+		$cbu_subtotal    = sanitize_text_field( $post_data['qr_cbu_subtotal'] ?? '' );
+		$holder_subtotal = sanitize_text_field( $post_data['qr_holder_subtotal'] ?? '' );
+		$alias_shipping  = sanitize_text_field( $post_data['qr_alias_shipping'] ?? '' );
+		$cbu_shipping    = sanitize_text_field( $post_data['qr_cbu_shipping'] ?? '' );
+		$holder_shipping = sanitize_text_field( $post_data['qr_holder_shipping'] ?? '' );
+		$webhook_secret  = sanitize_text_field( $post_data['qr_webhook_secret'] ?? '' );
 
-		update_option( 'spg_qr_enabled',          'yes' === $enabled ? 'yes' : 'no' );
-		update_option( 'spg_qr_alias_subtotal',    $alias_subtotal );
-		update_option( 'spg_qr_cbu_subtotal',      $cbu_subtotal );
-		update_option( 'spg_qr_holder_subtotal',   $holder_subtotal );
-		update_option( 'spg_qr_alias_shipping',    $alias_shipping );
-		update_option( 'spg_qr_cbu_shipping',      $cbu_shipping );
-		update_option( 'spg_qr_holder_shipping',   $holder_shipping );
+		update_option( 'spg_qr_enabled', 'yes' === $enabled ? 'yes' : 'no' );
+		update_option( 'spg_qr_alias_subtotal', $alias_subtotal );
+		update_option( 'spg_qr_cbu_subtotal', $cbu_subtotal );
+		update_option( 'spg_qr_holder_subtotal', $holder_subtotal );
+		update_option( 'spg_qr_alias_shipping', $alias_shipping );
+		update_option( 'spg_qr_cbu_shipping', $cbu_shipping );
+		update_option( 'spg_qr_holder_shipping', $holder_shipping );
 
 		if ( ! empty( $webhook_secret ) ) {
 			update_option( 'spg_qr_webhook_secret', $webhook_secret );
@@ -393,6 +438,7 @@ class SPG_Admin_Settings {
 		if ( ! check_ajax_referer( 'spg_admin_nonce', 'nonce', false ) ) {
 			wp_send_json_error( array( 'message' => __( 'Security check failed.', 'split-payment-gateway' ) ), 403 );
 		}
+		// phpcs:ignore WordPress.WP.Capabilities.Unknown
 		if ( ! current_user_can( 'manage_woocommerce' ) ) {
 			wp_send_json_error( array( 'message' => __( 'Access denied.', 'split-payment-gateway' ) ), 403 );
 		}
@@ -406,7 +452,8 @@ class SPG_Admin_Settings {
 	 */
 	private function get_client_gateways( $client_id ) {
 		global $wpdb;
-		return $wpdb->get_results(
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
+		$rows = $wpdb->get_results(
 			$wpdb->prepare(
 				"SELECT id, gateway_name, display_name, is_default_shipping, is_default_total,
 				        fiscal_entity_name, fiscal_tax_id, is_active
@@ -416,7 +463,9 @@ class SPG_Admin_Settings {
 				$client_id
 			),
 			ARRAY_A
-		) ?: array();
+		);
+
+		return is_array( $rows ) ? $rows : array();
 	}
 
 	/**
@@ -427,7 +476,8 @@ class SPG_Admin_Settings {
 	 */
 	private function get_client_rules( $client_id ) {
 		global $wpdb;
-		return $wpdb->get_results(
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
+		$rows = $wpdb->get_results(
 			$wpdb->prepare(
 				"SELECT * FROM `{$wpdb->prefix}spg_client_split_rules`
 				 WHERE client_id = %s
@@ -435,7 +485,9 @@ class SPG_Admin_Settings {
 				$client_id
 			),
 			ARRAY_A
-		) ?: array();
+		);
+
+		return is_array( $rows ) ? $rows : array();
 	}
 
 	/**
@@ -487,14 +539,14 @@ class SPG_Admin_Settings {
 	 */
 	private function get_qr_gateways_settings() {
 		return array(
-			'enabled'        => get_option( 'spg_qr_enabled', 'no' ),
-			'alias_subtotal' => get_option( 'spg_qr_alias_subtotal', '' ),
-			'cbu_subtotal'   => get_option( 'spg_qr_cbu_subtotal', '' ),
+			'enabled'         => get_option( 'spg_qr_enabled', 'no' ),
+			'alias_subtotal'  => get_option( 'spg_qr_alias_subtotal', '' ),
+			'cbu_subtotal'    => get_option( 'spg_qr_cbu_subtotal', '' ),
 			'holder_subtotal' => get_option( 'spg_qr_holder_subtotal', '' ),
-			'alias_shipping' => get_option( 'spg_qr_alias_shipping', '' ),
-			'cbu_shipping'   => get_option( 'spg_qr_cbu_shipping', '' ),
+			'alias_shipping'  => get_option( 'spg_qr_alias_shipping', '' ),
+			'cbu_shipping'    => get_option( 'spg_qr_cbu_shipping', '' ),
 			'holder_shipping' => get_option( 'spg_qr_holder_shipping', '' ),
-			'webhook_secret' => get_option( 'spg_qr_webhook_secret', '' ) ? '••••••••' : '',
+			'webhook_secret'  => get_option( 'spg_qr_webhook_secret', '' ) ? '••••••••' : '',
 		);
 	}
 }

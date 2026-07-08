@@ -50,11 +50,11 @@ defined( 'ABSPATH' ) || exit;
 					<th><label for="spg-mp-access-token"><?php esc_html_e( 'Access Token', 'split-payment-gateway' ); ?></label></th>
 					<td>
 						<input type="password"
-							   id="spg-mp-access-token"
-							   name="mp_access_token"
-							   class="regular-text"
-							   autocomplete="new-password"
-							   placeholder="<?php echo esc_attr( $mp_settings['access_token'] ? '••••••••' : 'APP_USR-...' ); ?>">
+								id="spg-mp-access-token"
+								name="mp_access_token"
+								class="regular-text"
+								autocomplete="new-password"
+								placeholder="<?php echo esc_attr( $mp_settings['access_token'] ? '••••••••' : 'APP_USR-...' ); ?>">
 						<p class="description">
 							<?php
 							printf(
@@ -70,11 +70,11 @@ defined( 'ABSPATH' ) || exit;
 					<th><label for="spg-mp-user-id"><?php esc_html_e( 'User ID', 'split-payment-gateway' ); ?></label></th>
 					<td>
 						<input type="text"
-							   id="spg-mp-user-id"
-							   name="mp_user_id"
-							   class="regular-text"
-							   value="<?php echo esc_attr( $mp_settings['user_id'] ); ?>"
-							   placeholder="123456789">
+								id="spg-mp-user-id"
+								name="mp_user_id"
+								class="regular-text"
+								value="<?php echo esc_attr( $mp_settings['user_id'] ); ?>"
+								placeholder="123456789">
 						<p class="description">
 							<?php esc_html_e( 'Your MercadoPago numeric User ID.', 'split-payment-gateway' ); ?>
 						</p>
@@ -165,11 +165,11 @@ defined( 'ABSPATH' ) || exit;
 					<th><label for="spg-qr-alias-subtotal"><?php esc_html_e( 'Alias', 'split-payment-gateway' ); ?></label></th>
 					<td>
 						<input type="text"
-							   id="spg-qr-alias-subtotal"
-							   name="qr_alias_subtotal"
-							   class="regular-text"
-							   value="<?php echo esc_attr( $qr_settings['alias_subtotal'] ); ?>"
-							   placeholder="tienda.empresa.ar">
+								id="spg-qr-alias-subtotal"
+								name="qr_alias_subtotal"
+								class="regular-text"
+								value="<?php echo esc_attr( $qr_settings['alias_subtotal'] ); ?>"
+								placeholder="tienda.empresa.ar">
 						<p class="description">
 							<?php esc_html_e( 'Alias bancario de la cuenta donde recibirás el pago del subtotal.', 'split-payment-gateway' ); ?>
 						</p>
@@ -179,11 +179,11 @@ defined( 'ABSPATH' ) || exit;
 					<th><label for="spg-qr-cbu-subtotal"><?php esc_html_e( 'CBU / CVU (fallback)', 'split-payment-gateway' ); ?></label></th>
 					<td>
 						<input type="text"
-							   id="spg-qr-cbu-subtotal"
-							   name="qr_cbu_subtotal"
-							   class="regular-text"
-							   value="<?php echo esc_attr( $qr_settings['cbu_subtotal'] ); ?>"
-							   placeholder="0000000000000000000000">
+								id="spg-qr-cbu-subtotal"
+								name="qr_cbu_subtotal"
+								class="regular-text"
+								value="<?php echo esc_attr( $qr_settings['cbu_subtotal'] ); ?>"
+								placeholder="0000000000000000000000">
 						<p class="description">
 							<?php esc_html_e( 'CBU o CVU usado como alternativa si el alias no es reconocido.', 'split-payment-gateway' ); ?>
 						</p>
@@ -193,11 +193,11 @@ defined( 'ABSPATH' ) || exit;
 					<th><label for="spg-qr-holder-subtotal"><?php esc_html_e( 'Titular', 'split-payment-gateway' ); ?></label></th>
 					<td>
 						<input type="text"
-							   id="spg-qr-holder-subtotal"
-							   name="qr_holder_subtotal"
-							   class="regular-text"
-							   value="<?php echo esc_attr( $qr_settings['holder_subtotal'] ); ?>"
-							   placeholder="Nombre del titular">
+								id="spg-qr-holder-subtotal"
+								name="qr_holder_subtotal"
+								class="regular-text"
+								value="<?php echo esc_attr( $qr_settings['holder_subtotal'] ); ?>"
+								placeholder="Nombre del titular">
 					</td>
 				</tr>
 			</table>
@@ -209,11 +209,11 @@ defined( 'ABSPATH' ) || exit;
 					<th><label for="spg-qr-alias-shipping"><?php esc_html_e( 'Alias', 'split-payment-gateway' ); ?></label></th>
 					<td>
 						<input type="text"
-							   id="spg-qr-alias-shipping"
-							   name="qr_alias_shipping"
-							   class="regular-text"
-							   value="<?php echo esc_attr( $qr_settings['alias_shipping'] ); ?>"
-							   placeholder="operador.logistico.ar">
+								id="spg-qr-alias-shipping"
+								name="qr_alias_shipping"
+								class="regular-text"
+								value="<?php echo esc_attr( $qr_settings['alias_shipping'] ); ?>"
+								placeholder="operador.logistico.ar">
 						<p class="description">
 							<?php esc_html_e( 'Alias bancario de la cuenta del operador logístico.', 'split-payment-gateway' ); ?>
 						</p>
@@ -223,33 +223,33 @@ defined( 'ABSPATH' ) || exit;
 					<th><label for="spg-qr-cbu-shipping"><?php esc_html_e( 'CBU / CVU (fallback)', 'split-payment-gateway' ); ?></label></th>
 					<td>
 						<input type="text"
-							   id="spg-qr-cbu-shipping"
-							   name="qr_cbu_shipping"
-							   class="regular-text"
-							   value="<?php echo esc_attr( $qr_settings['cbu_shipping'] ); ?>"
-							   placeholder="0000000000000000000000">
+								id="spg-qr-cbu-shipping"
+								name="qr_cbu_shipping"
+								class="regular-text"
+								value="<?php echo esc_attr( $qr_settings['cbu_shipping'] ); ?>"
+								placeholder="0000000000000000000000">
 					</td>
 				</tr>
 				<tr>
 					<th><label for="spg-qr-holder-shipping"><?php esc_html_e( 'Titular', 'split-payment-gateway' ); ?></label></th>
 					<td>
 						<input type="text"
-							   id="spg-qr-holder-shipping"
-							   name="qr_holder_shipping"
-							   class="regular-text"
-							   value="<?php echo esc_attr( $qr_settings['holder_shipping'] ); ?>"
-							   placeholder="Nombre del titular">
+								id="spg-qr-holder-shipping"
+								name="qr_holder_shipping"
+								class="regular-text"
+								value="<?php echo esc_attr( $qr_settings['holder_shipping'] ); ?>"
+								placeholder="Nombre del titular">
 					</td>
 				</tr>
 				<tr>
 					<th><label for="spg-qr-webhook-secret"><?php esc_html_e( 'Webhook Secret', 'split-payment-gateway' ); ?></label></th>
 					<td>
 						<input type="password"
-							   id="spg-qr-webhook-secret"
-							   name="qr_webhook_secret"
-							   class="regular-text"
-							   autocomplete="new-password"
-							   placeholder="<?php echo esc_attr( $qr_settings['webhook_secret'] ? '••••••••' : '' ); ?>">
+								id="spg-qr-webhook-secret"
+								name="qr_webhook_secret"
+								class="regular-text"
+								autocomplete="new-password"
+								placeholder="<?php echo esc_attr( $qr_settings['webhook_secret'] ? '••••••••' : '' ); ?>">
 						<p class="description">
 							<?php esc_html_e( 'Secreto HMAC-SHA256 para validar notificaciones del banco. Dejar en blanco para mantener el valor actual.', 'split-payment-gateway' ); ?>
 						</p>

@@ -4,6 +4,8 @@
     "description": "Split Payment Gateway for WooCommerce – frontend build tooling",
     "private": true,
     "scripts": {
+        "lint": "vendor/bin/phpcs --standard=phpcs.xml.dist includes/ admin/ split-payment-plugin.php",
+        "lint:fix": "vendor/bin/phpcbf --standard=WordPress --extensions=php includes/ admin/ split-payment-plugin.php",
         "build": "webpack --mode production",
         "dev": "webpack --mode development --watch"
     },

@@ -1,4 +1,5 @@
 <?php
+// phpcs:ignoreFile WordPress.Files.FileName.InvalidClassFileName
 /**
  * Plugin Name:       Split Payment Gateway for WooCommerce
  * Plugin URI:        https://github.com/Rodogaby1985/pasarela-pagos-divididos
@@ -13,11 +14,14 @@
  * Domain Path:       /languages
  * WC requires at least: 6.0
  * WC tested up to:   8.0
+ *
+ * @package SplitPaymentGateway
  */
 
 defined( 'ABSPATH' ) || exit;
 
-// Plugin constants
+// phpcs:disable Universal.Files.SeparateFunctionsFromOO
+// Plugin constants.
 define( 'SPG_VERSION', '1.1.0' );
 define( 'SPG_PLUGIN_FILE', __FILE__ );
 define( 'SPG_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
@@ -51,7 +55,11 @@ function spg_woocommerce_missing_notice() {
  */
 final class Split_Payment_Gateway_Plugin {
 
-	/** @var Split_Payment_Gateway_Plugin|null */
+	/**
+	 * Singleton plugin instance.
+	 *
+	 * @var Split_Payment_Gateway_Plugin|null
+	 */
 	private static $instance = null;
 
 	/**
@@ -78,40 +86,40 @@ final class Split_Payment_Gateway_Plugin {
 	 * Load required files.
 	 */
 	private function load_dependencies() {
-		// Traits (loaded first)
+		// Traits (loaded first).
 		require_once SPG_PLUGIN_DIR . 'includes/traits/trait-logger.php';
 		require_once SPG_PLUGIN_DIR . 'includes/traits/trait-security.php';
 
-		// Database
-		require_once SPG_PLUGIN_DIR . 'includes/database/class-migrations.php';
+		// Database.
+		require_once SPG_PLUGIN_DIR . 'includes/database/class-spg-migrations.php';
 
-		// Core adapters
-		require_once SPG_PLUGIN_DIR . 'includes/adapters/class-base-adapter.php';
-		require_once SPG_PLUGIN_DIR . 'includes/adapters/class-mercadopago-adapter.php';
-		require_once SPG_PLUGIN_DIR . 'includes/adapters/class-nave-adapter.php';
-		require_once SPG_PLUGIN_DIR . 'includes/adapters/class-stripe-adapter.php';
-		require_once SPG_PLUGIN_DIR . 'includes/adapters/class-paypal-adapter.php';
-		require_once SPG_PLUGIN_DIR . 'includes/adapters/class-qr-transfer-adapter.php';
+		// Core adapters.
+		require_once SPG_PLUGIN_DIR . 'includes/adapters/class-spg-base-adapter.php';
+		require_once SPG_PLUGIN_DIR . 'includes/adapters/class-spg-mercadopago-adapter.php';
+		require_once SPG_PLUGIN_DIR . 'includes/adapters/class-spg-nave-adapter.php';
+		require_once SPG_PLUGIN_DIR . 'includes/adapters/class-spg-stripe-adapter.php';
+		require_once SPG_PLUGIN_DIR . 'includes/adapters/class-spg-paypal-adapter.php';
+		require_once SPG_PLUGIN_DIR . 'includes/adapters/class-spg-qr-transfer-adapter.php';
 
-		// Core services
+		// Core services.
 		require_once SPG_PLUGIN_DIR . 'includes/class-gateway-adapter-factory-interface.php';
-		require_once SPG_PLUGIN_DIR . 'includes/class-gateway-adapter-factory.php';
-		require_once SPG_PLUGIN_DIR . 'includes/class-payment-routing-engine.php';
-		require_once SPG_PLUGIN_DIR . 'includes/class-split-distribution-engine.php';
-		require_once SPG_PLUGIN_DIR . 'includes/class-webhook-orchestrator.php';
-		require_once SPG_PLUGIN_DIR . 'includes/class-split-payment-service.php';
-		require_once SPG_PLUGIN_DIR . 'includes/class-gateway-credentials-validator.php';
+		require_once SPG_PLUGIN_DIR . 'includes/class-spg-gateway-adapter-factory.php';
+		require_once SPG_PLUGIN_DIR . 'includes/class-spg-payment-routing-engine.php';
+		require_once SPG_PLUGIN_DIR . 'includes/class-spg-split-distribution-engine.php';
+		require_once SPG_PLUGIN_DIR . 'includes/class-spg-webhook-orchestrator.php';
+		require_once SPG_PLUGIN_DIR . 'includes/class-spg-split-payment-service.php';
+		require_once SPG_PLUGIN_DIR . 'includes/class-spg-gateway-credentials-validator.php';
 
-		// WooCommerce Gateway
-		require_once SPG_PLUGIN_DIR . 'includes/class-split-payment-gateway.php';
+		// WooCommerce Gateway.
+		require_once SPG_PLUGIN_DIR . 'includes/class-spg-split-payment-gateway.php';
 
-		// REST API
-		require_once SPG_PLUGIN_DIR . 'includes/api/class-rest-api.php';
+		// REST API.
+		require_once SPG_PLUGIN_DIR . 'includes/api/class-spg-rest-api.php';
 
-		// Admin
+		// Admin.
 		if ( is_admin() ) {
-			require_once SPG_PLUGIN_DIR . 'admin/class-admin-settings.php';
-			require_once SPG_PLUGIN_DIR . 'admin/class-admin-dashboard.php';
+			require_once SPG_PLUGIN_DIR . 'admin/class-spg-admin-settings.php';
+			require_once SPG_PLUGIN_DIR . 'admin/class-spg-admin-dashboard.php';
 		}
 	}
 
@@ -119,29 +127,29 @@ final class Split_Payment_Gateway_Plugin {
 	 * Initialise WordPress/WooCommerce hooks.
 	 */
 	private function init_hooks() {
-		// Activation / deactivation
+		// Activation / deactivation.
 		register_activation_hook( SPG_PLUGIN_FILE, array( $this, 'activate' ) );
 		register_deactivation_hook( SPG_PLUGIN_FILE, array( $this, 'deactivate' ) );
 
-		// Register WooCommerce payment gateway
+		// Register WooCommerce payment gateway.
 		add_filter( 'woocommerce_payment_gateways', array( $this, 'register_gateway' ) );
 
-		// REST API
+		// REST API.
 		add_action( 'rest_api_init', array( 'SPG_Rest_Api', 'register_routes' ) );
 
-		// Admin
+		// Admin.
 		if ( is_admin() ) {
 			new SPG_Admin_Settings();
 			new SPG_Admin_Dashboard();
 		}
 
-		// Load plugin text domain
+		// Load plugin text domain.
 		add_action( 'init', array( $this, 'load_textdomain' ) );
 
-		// Enqueue frontend assets on checkout
+		// Enqueue frontend assets on checkout.
 		add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_frontend_assets' ) );
 
-		// HPOS (High-Performance Order Storage) compatibility declaration
+		// HPOS (High-Performance Order Storage) compatibility declaration.
 		add_action( 'before_woocommerce_init', array( $this, 'declare_hpos_compatibility' ) );
 	}
 
@@ -242,24 +250,24 @@ final class Split_Payment_Gateway_Plugin {
 				'availableMethods' => $available_methods,
 				'qrExpirySeconds'  => SPG_QR_Transfer_Adapter::EXPIRY_SECONDS,
 				'i18n'             => array(
-					'payTitle'       => __( 'Complete Your Payment', 'split-payment-gateway' ),
-					'shippingLabel'  => __( 'Shipping', 'split-payment-gateway' ),
-					'subtotalLabel'  => __( 'Subtotal', 'split-payment-gateway' ),
-					'totalLabel'     => __( 'Order Total', 'split-payment-gateway' ),
-					'selectMethod'   => __( 'Select payment method:', 'split-payment-gateway' ),
-					'qrInstruction'  => __( 'Scan with your banking app', 'split-payment-gateway' ),
-					'qrAlias'        => __( 'Alias:', 'split-payment-gateway' ),
-					'qrExpires'      => __( 'Expires in', 'split-payment-gateway' ),
-					'qrExpired'      => __( 'QR expired. Refresh to get a new one.', 'split-payment-gateway' ),
-					'qrRefresh'      => __( 'Refresh QR', 'split-payment-gateway' ),
-					'paying'         => __( 'Processing...', 'split-payment-gateway' ),
-					'paid'           => __( 'Paid', 'split-payment-gateway' ),
-					'failed'         => __( 'Failed', 'split-payment-gateway' ),
-					'finalize'       => __( 'Finalize Order', 'split-payment-gateway' ),
-					'payShipping'    => __( 'Pay Shipping', 'split-payment-gateway' ),
-					'payTotal'       => __( 'Pay Total', 'split-payment-gateway' ),
-					'methodQR'       => __( 'QR Transfer', 'split-payment-gateway' ),
-					'methodGateway'  => __( 'Pay with card / wallet', 'split-payment-gateway' ),
+					'payTitle'      => __( 'Complete Your Payment', 'split-payment-gateway' ),
+					'shippingLabel' => __( 'Shipping', 'split-payment-gateway' ),
+					'subtotalLabel' => __( 'Subtotal', 'split-payment-gateway' ),
+					'totalLabel'    => __( 'Order Total', 'split-payment-gateway' ),
+					'selectMethod'  => __( 'Select payment method:', 'split-payment-gateway' ),
+					'qrInstruction' => __( 'Scan with your banking app', 'split-payment-gateway' ),
+					'qrAlias'       => __( 'Alias:', 'split-payment-gateway' ),
+					'qrExpires'     => __( 'Expires in', 'split-payment-gateway' ),
+					'qrExpired'     => __( 'QR expired. Refresh to get a new one.', 'split-payment-gateway' ),
+					'qrRefresh'     => __( 'Refresh QR', 'split-payment-gateway' ),
+					'paying'        => __( 'Processing...', 'split-payment-gateway' ),
+					'paid'          => __( 'Paid', 'split-payment-gateway' ),
+					'failed'        => __( 'Failed', 'split-payment-gateway' ),
+					'finalize'      => __( 'Finalize Order', 'split-payment-gateway' ),
+					'payShipping'   => __( 'Pay Shipping', 'split-payment-gateway' ),
+					'payTotal'      => __( 'Pay Total', 'split-payment-gateway' ),
+					'methodQR'      => __( 'QR Transfer', 'split-payment-gateway' ),
+					'methodGateway' => __( 'Pay with card / wallet', 'split-payment-gateway' ),
 				),
 			)
 		);
@@ -279,7 +287,11 @@ final class Split_Payment_Gateway_Plugin {
 			'paypal'      => 'PayPal',
 			'qr_transfer' => __( 'QR Transfer', 'split-payment-gateway' ),
 		);
-		return $labels[ $slug ] ?? ucfirst( str_replace( '_', ' ', $slug ) );
+		if ( isset( $labels[ $slug ] ) ) {
+			return $labels[ $slug ];
+		}
+
+		return ucfirst( str_replace( '_', ' ', $slug ) );
 	}
 
 	/**

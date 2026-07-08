@@ -9,7 +9,11 @@
  */
 
 defined( 'ABSPATH' ) || exit;
+// phpcs:disable WordPress.WP.I18n.MissingTranslatorsComment
 
+/**
+ * Validates gateway credentials against provider APIs.
+ */
 class SPG_Gateway_Credentials_Validator {
 
 	use SPG_Logger;
@@ -72,9 +76,9 @@ class SPG_Gateway_Credentials_Validator {
 			);
 		}
 
-		$api_user_id      = (string) ( $body['id'] ?? '' );
-		$api_country      = strtoupper( $body['site_id'] ?? '' );
-		$api_environment  = ( false !== strpos( $access_token, 'TEST-' ) ) ? 'sandbox' : 'production';
+		$api_user_id     = (string) ( $body['id'] ?? '' );
+		$api_country     = strtoupper( $body['site_id'] ?? '' );
+		$api_environment = ( false !== strpos( $access_token, 'TEST-' ) ) ? 'sandbox' : 'production';
 
 		// Validate that the provided User ID matches (if supplied).
 		if ( ! empty( $user_id ) && $api_user_id !== (string) $user_id ) {

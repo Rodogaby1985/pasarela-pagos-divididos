@@ -14,9 +14,18 @@
  */
 
 defined( 'ABSPATH' ) || exit;
+// phpcs:disable Squiz.Commenting.FunctionComment.MissingParamTag,Generic.Commenting.DocComment.MissingShort
 
+/**
+ * MercadoPago payment gateway adapter.
+ */
 class SPG_MercadoPago_Adapter extends SPG_Base_Adapter {
 
+	/**
+	 * Gateway slug.
+	 *
+	 * @var string
+	 */
 	protected $gateway_name = 'mercadopago';
 
 	/** @var string MercadoPago Preferences API endpoint. */
@@ -53,8 +62,8 @@ class SPG_MercadoPago_Adapter extends SPG_Base_Adapter {
 				'failure' => esc_url_raw( $payload['return_url'] ),
 				'pending' => esc_url_raw( $payload['return_url'] ),
 			),
-			'auto_return'      => 'approved',
-			'notification_url' => rest_url( 'spg/v1/webhooks/mercadopago' ),
+			'auto_return'        => 'approved',
+			'notification_url'   => rest_url( 'spg/v1/webhooks/mercadopago' ),
 		);
 
 		// In sandbox mode use the sandbox init_point.
@@ -186,7 +195,7 @@ class SPG_MercadoPago_Adapter extends SPG_Base_Adapter {
 	 * }
 	 */
 	public function create_webhook() {
-		$access_token   = $this->config['access_token'] ?? '';
+		$access_token     = $this->config['access_token'] ?? '';
 		$notification_url = rest_url( 'spg/v1/webhooks/mercadopago' );
 
 		if ( empty( $access_token ) ) {
@@ -229,7 +238,7 @@ class SPG_MercadoPago_Adapter extends SPG_Base_Adapter {
 		);
 
 		try {
-			$data = $this->decode_response( $response );
+			$data       = $this->decode_response( $response );
 			$webhook_id = (string) ( $data['id'] ?? '' );
 
 			// Persist the webhook ID so it can be referenced later.
@@ -244,7 +253,7 @@ class SPG_MercadoPago_Adapter extends SPG_Base_Adapter {
 			return array(
 				'success'    => false,
 				'webhook_id' => '',
-				'message'    => $e->getMessage(),
+				'message'    => sanitize_text_field( $e->getMessage() ),
 			);
 		}
 	}
@@ -355,7 +364,7 @@ class SPG_MercadoPago_Adapter extends SPG_Base_Adapter {
 				}
 			}
 		} catch ( Exception $e ) {
-			// Ignore – treat as not found.
+			$this->log_error( 'Error searching existing MercadoPago webhook.', array( 'error' => $e->getMessage() ) );
 		}
 
 		return null;
@@ -369,15 +378,15 @@ class SPG_MercadoPago_Adapter extends SPG_Base_Adapter {
 	 */
 	private function normalise_status( $raw_status ) {
 		$map = array(
-			'approved'      => 'approved',
-			'authorized'    => 'approved',
-			'pending'       => 'pending',
-			'in_process'    => 'pending',
-			'in_mediation'  => 'pending',
-			'rejected'      => 'rejected',
-			'cancelled'     => 'cancelled',
-			'refunded'      => 'refunded',
-			'charged_back'  => 'refunded',
+			'approved'     => 'approved',
+			'authorized'   => 'approved',
+			'pending'      => 'pending',
+			'in_process'   => 'pending',
+			'in_mediation' => 'pending',
+			'rejected'     => 'rejected',
+			'cancelled'    => 'cancelled',
+			'refunded'     => 'refunded',
+			'charged_back' => 'refunded',
 		);
 		return $map[ $raw_status ] ?? 'pending';
 	}

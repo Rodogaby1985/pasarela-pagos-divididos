@@ -8,7 +8,11 @@
  */
 
 defined( 'ABSPATH' ) || exit;
+// phpcs:disable Generic.Commenting.DocComment.MissingShort,WordPress.Security.EscapeOutput.ExceptionNotEscaped,Squiz.Commenting.FunctionComment.Missing
 
+/**
+ * Payment routing engine.
+ */
 class SPG_Payment_Routing_Engine {
 
 	use SPG_Logger;
@@ -20,8 +24,8 @@ class SPG_Payment_Routing_Engine {
 	private $factory;
 
 	/**
-	 * @param wpdb                                   $db      WordPress DB object.
-	 * @param SPG_Gateway_Adapter_Factory_Interface  $factory Adapter factory.
+	 * @param wpdb                                  $db      WordPress DB object.
+	 * @param SPG_Gateway_Adapter_Factory_Interface $factory Adapter factory.
 	 */
 	public function __construct( $db, SPG_Gateway_Adapter_Factory_Interface $factory ) {
 		$this->db      = $db;
@@ -98,7 +102,10 @@ class SPG_Payment_Routing_Engine {
 				if ( $gateway_name && $this->factory->has( $gateway_name ) ) {
 					$config = $this->get_gateway_config( $client_id, $gateway_name );
 					if ( $config ) {
-						return array( 'name' => $gateway_name, 'config' => $config );
+						return array(
+							'name'   => $gateway_name,
+							'config' => $config,
+						);
 					}
 				}
 			}
@@ -144,7 +151,10 @@ class SPG_Payment_Routing_Engine {
 		$gateway_name = $row['gateway_name'];
 		$config       = $this->decrypt_credentials( $row['credentials'] );
 
-		return array( 'name' => $gateway_name, 'config' => $config );
+		return array(
+			'name'   => $gateway_name,
+			'config' => $config,
+		);
 	}
 
 	/**
@@ -245,7 +255,7 @@ class SPG_Payment_Routing_Engine {
 	 */
 	private function decrypt_credentials( $encrypted_json ) {
 		// Use the Security trait via a temporary closure (trait is mixed in elsewhere).
-		$security = new class {
+		$security = new class() {
 			use SPG_Security;
 
 			public function decrypt_public( $data ) {

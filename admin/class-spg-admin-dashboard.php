@@ -6,9 +6,16 @@
  */
 
 defined( 'ABSPATH' ) || exit;
+// phpcs:disable WordPress.WP.Capabilities.Unknown,WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
 
+/**
+ * Admin dashboard controller.
+ */
 class SPG_Admin_Dashboard {
 
+	/**
+	 * Register dashboard hooks.
+	 */
 	public function __construct() {
 		add_action( 'admin_menu', array( $this, 'add_menu_page' ) );
 	}
@@ -17,6 +24,7 @@ class SPG_Admin_Dashboard {
 	 * Register the dashboard sub-page under WooCommerce.
 	 */
 	public function add_menu_page() {
+		// phpcs:ignore WordPress.WP.Capabilities.Unknown
 		add_submenu_page(
 			'woocommerce',
 			__( 'Split Payment Dashboard', 'split-payment-gateway' ),
@@ -31,15 +39,16 @@ class SPG_Admin_Dashboard {
 	 * Render the dashboard page.
 	 */
 	public function render() {
+		// phpcs:ignore WordPress.WP.Capabilities.Unknown
 		if ( ! current_user_can( 'manage_woocommerce' ) ) {
 			wp_die( esc_html__( 'Access denied.', 'split-payment-gateway' ) );
 		}
 
 		global $wpdb;
 
-		$payments      = $this->get_recent_payments( $wpdb );
-		$webhook_logs  = $this->get_recent_webhook_logs( $wpdb );
-		$stats         = $this->get_stats( $wpdb );
+		$payments     = $this->get_recent_payments( $wpdb );
+		$webhook_logs = $this->get_recent_webhook_logs( $wpdb );
+		$stats        = $this->get_stats( $wpdb );
 
 		include SPG_PLUGIN_DIR . 'admin/templates/dashboard-page.php';
 	}
@@ -53,14 +62,17 @@ class SPG_Admin_Dashboard {
 	 * @return array
 	 */
 	private function get_recent_payments( $wpdb ) {
-		return $wpdb->get_results(
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
+		$results = $wpdb->get_results(
 			"SELECT sp.*, o.post_status AS order_status
 			 FROM `{$wpdb->prefix}spg_split_payments` sp
 			 LEFT JOIN `{$wpdb->prefix}posts` o ON sp.order_id = o.ID
 			 ORDER BY sp.created_at DESC
 			 LIMIT 50",
 			ARRAY_A
-		) ?: array();
+		);
+
+		return is_array( $results ) ? $results : array();
 	}
 
 	/**
@@ -70,12 +82,15 @@ class SPG_Admin_Dashboard {
 	 * @return array
 	 */
 	private function get_recent_webhook_logs( $wpdb ) {
-		return $wpdb->get_results(
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
+		$results = $wpdb->get_results(
 			"SELECT * FROM `{$wpdb->prefix}spg_webhook_logs`
 			 ORDER BY created_at DESC
 			 LIMIT 50",
 			ARRAY_A
-		) ?: array();
+		);
+
+		return is_array( $results ) ? $results : array();
 	}
 
 	/**
@@ -86,25 +101,30 @@ class SPG_Admin_Dashboard {
 	 */
 	private function get_stats( $wpdb ) {
 		$total_count = (int) $wpdb->get_var(
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
 			"SELECT COUNT(*) FROM `{$wpdb->prefix}spg_split_payments`"
 		);
 
 		$completed_count = (int) $wpdb->get_var(
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
 			"SELECT COUNT(*) FROM `{$wpdb->prefix}spg_split_payments` WHERE status = 'completed'"
 		);
 
 		$failed_count = (int) $wpdb->get_var(
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
 			"SELECT COUNT(*) FROM `{$wpdb->prefix}spg_split_payments`
 			 WHERE status IN ('failed', 'partial_failed')"
 		);
 
 		$total_revenue = (float) $wpdb->get_var(
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
 			"SELECT SUM(shipping_amount + total_amount)
 			 FROM `{$wpdb->prefix}spg_split_payments`
 			 WHERE status = 'completed'"
 		);
 
 		$pending_webhooks = (int) $wpdb->get_var(
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
 			"SELECT COUNT(*) FROM `{$wpdb->prefix}spg_webhook_logs` WHERE processed = 0"
 		);
 
