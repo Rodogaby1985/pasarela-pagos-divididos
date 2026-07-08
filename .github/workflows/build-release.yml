@@ -1,0 +1,72 @@
+name: Build & Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '7.4'
+          coverage: none
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install Composer dependencies
+        run: composer install --no-dev --optimize-autoloader --no-progress
+
+      - name: Install Node dependencies
+        run: npm ci --silent
+
+      - name: Build assets
+        run: npm run build
+
+      - name: Stage plugin files
+        run: |
+          mkdir -p build/split-payment-plugin
+          cp -r includes admin assets vendor \
+                split-payment-plugin.php uninstall.php \
+                build/split-payment-plugin/
+
+      - name: Remove unnecessary files from build
+        run: |
+          rm -rf build/split-payment-plugin/vendor/.git
+
+      - name: Create ZIP package
+        run: |
+          cd build
+          zip -r -q split-payment-plugin-READY.zip split-payment-plugin/
+          mv split-payment-plugin-READY.zip ../
+
+      - name: Generate checksum
+        run: sha256sum split-payment-plugin-READY.zip > split-payment-plugin-READY.zip.sha256
+
+      - name: Create GitHub Release and upload assets
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: Release ${{ github.ref_name }}
+          draft: false
+          prerelease: false
+          body_path: .github/release-template.md
+          files: |
+            split-payment-plugin-READY.zip
+            split-payment-plugin-READY.zip.sha256
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
