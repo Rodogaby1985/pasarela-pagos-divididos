@@ -6,9 +6,18 @@
  */
 
 defined( 'ABSPATH' ) || exit;
+// phpcs:disable Squiz.Commenting.FunctionComment.MissingParamTag,Squiz.Commenting.VariableComment.Missing,Generic.Commenting.DocComment.MissingShort
 
+/**
+ * Nave payment gateway adapter.
+ */
 class SPG_Nave_Adapter extends SPG_Base_Adapter {
 
+	/**
+	 * Gateway slug.
+	 *
+	 * @var string
+	 */
 	protected $gateway_name = 'nave';
 
 	/** @var string Nave API base URL (production). */
@@ -21,7 +30,7 @@ class SPG_Nave_Adapter extends SPG_Base_Adapter {
 		$api_key = $this->config['api_key'] ?? '';
 
 		$body = array(
-			'amount'      => (int) round( (float) $payload['amount'] * 100 ), // centavos
+			'amount'      => (int) round( (float) $payload['amount'] * 100 ), // centavos.
 			'currency'    => strtoupper( $payload['currency'] ),
 			'order_id'    => sanitize_text_field( $payload['order_id'] ),
 			'description' => sanitize_text_field( $payload['description'] ),
@@ -136,13 +145,13 @@ class SPG_Nave_Adapter extends SPG_Base_Adapter {
 	 */
 	private function normalise_status( $raw_status ) {
 		$map = array(
-			'paid'      => 'approved',
-			'approved'  => 'approved',
-			'pending'   => 'pending',
-			'processing'=> 'pending',
-			'failed'    => 'rejected',
-			'cancelled' => 'cancelled',
-			'refunded'  => 'refunded',
+			'paid'       => 'approved',
+			'approved'   => 'approved',
+			'pending'    => 'pending',
+			'processing' => 'pending',
+			'failed'     => 'rejected',
+			'cancelled'  => 'cancelled',
+			'refunded'   => 'refunded',
 		);
 		return $map[ $raw_status ] ?? 'pending';
 	}

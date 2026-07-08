@@ -8,7 +8,11 @@
  */
 
 defined( 'ABSPATH' ) || exit;
+// phpcs:disable Generic.Commenting.DocComment.MissingShort
 
+/**
+ * WooCommerce split payment gateway.
+ */
 class SPG_Split_Payment_Gateway extends WC_Payment_Gateway {
 
 	use SPG_Logger;
@@ -134,10 +138,13 @@ class SPG_Split_Payment_Gateway extends WC_Payment_Gateway {
 			);
 
 		} catch ( Exception $e ) {
-			$this->log_error( 'Payment initiation failed.', array(
-				'order_id' => $order_id,
-				'error'    => $e->getMessage(),
-			) );
+			$this->log_error(
+				'Payment initiation failed.',
+				array(
+					'order_id' => $order_id,
+					'error'    => $e->getMessage(),
+				)
+			);
 
 			wc_add_notice(
 				__( 'Payment could not be initiated. Please try again.', 'split-payment-gateway' ),

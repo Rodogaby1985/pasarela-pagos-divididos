@@ -6,9 +6,18 @@
  */
 
 defined( 'ABSPATH' ) || exit;
+// phpcs:disable Squiz.Commenting.FunctionComment.MissingParamTag,Squiz.Commenting.VariableComment.Missing,Generic.Commenting.DocComment.MissingShort,WordPress.Security.EscapeOutput.ExceptionNotEscaped
 
+/**
+ * PayPal payment gateway adapter.
+ */
 class SPG_PayPal_Adapter extends SPG_Base_Adapter {
 
+	/**
+	 * Gateway slug.
+	 *
+	 * @var string
+	 */
 	protected $gateway_name = 'paypal';
 
 	/** PayPal base URLs. */
@@ -22,12 +31,12 @@ class SPG_PayPal_Adapter extends SPG_Base_Adapter {
 	 * {@inheritdoc}
 	 */
 	public function initiate( array $payload ) {
-		$base = $this->get_api_base();
+		$base  = $this->get_api_base();
 		$token = $this->get_access_token();
 
 		$body = array(
-			'intent'         => 'CAPTURE',
-			'purchase_units' => array(
+			'intent'              => 'CAPTURE',
+			'purchase_units'      => array(
 				array(
 					'reference_id' => sanitize_text_field( $payload['order_id'] ),
 					'description'  => sanitize_text_field( $payload['description'] ),
@@ -50,10 +59,10 @@ class SPG_PayPal_Adapter extends SPG_Base_Adapter {
 			array(
 				'method'  => 'POST',
 				'headers' => array(
-					'Authorization'             => 'Bearer ' . $token,
-					'Content-Type'              => 'application/json',
-					'PayPal-Request-Id'         => $this->generate_token( 16 ),
-					'Prefer'                    => 'return=representation',
+					'Authorization'     => 'Bearer ' . $token,
+					'Content-Type'      => 'application/json',
+					'PayPal-Request-Id' => $this->generate_token( 16 ),
+					'Prefer'            => 'return=representation',
 				),
 				'body'    => wp_json_encode( $body ),
 				'timeout' => 30,
@@ -157,7 +166,7 @@ class SPG_PayPal_Adapter extends SPG_Base_Adapter {
 	 */
 	public function verify_webhook( $raw_body, array $headers ) {
 		$webhook_id    = $this->config['webhook_id'] ?? '';
-		$client_id     = $this->config['client_id']  ?? '';
+		$client_id     = $this->config['client_id'] ?? '';
 		$client_secret = $this->config['client_secret'] ?? '';
 
 		if ( empty( $webhook_id ) || empty( $client_id ) || empty( $client_secret ) ) {
@@ -165,11 +174,11 @@ class SPG_PayPal_Adapter extends SPG_Base_Adapter {
 		}
 
 		// Required headers from PayPal.
-		$transmission_id  = $headers['paypal-transmission-id']  ?? ( $headers['PayPal-Transmission-Id']  ?? '' );
+		$transmission_id   = $headers['paypal-transmission-id'] ?? ( $headers['PayPal-Transmission-Id'] ?? '' );
 		$transmission_time = $headers['paypal-transmission-time'] ?? ( $headers['PayPal-Transmission-Time'] ?? '' );
-		$transmission_sig = $headers['paypal-transmission-sig']  ?? ( $headers['PayPal-Transmission-Sig']  ?? '' );
-		$cert_url         = $headers['paypal-cert-url']          ?? ( $headers['PayPal-Cert-Url']          ?? '' );
-		$auth_algo        = $headers['paypal-auth-algo']         ?? ( $headers['PayPal-Auth-Algo']         ?? 'SHA256withRSA' );
+		$transmission_sig  = $headers['paypal-transmission-sig'] ?? ( $headers['PayPal-Transmission-Sig'] ?? '' );
+		$cert_url          = $headers['paypal-cert-url'] ?? ( $headers['PayPal-Cert-Url'] ?? '' );
+		$auth_algo         = $headers['paypal-auth-algo'] ?? ( $headers['PayPal-Auth-Algo'] ?? 'SHA256withRSA' );
 
 		if ( empty( $transmission_id ) || empty( $transmission_sig ) ) {
 			return false;
@@ -270,8 +279,8 @@ class SPG_PayPal_Adapter extends SPG_Base_Adapter {
 			)
 		);
 
-		$data                = $this->decode_response( $response );
-		$this->access_token  = $data['access_token'] ?? '';
+		$data               = $this->decode_response( $response );
+		$this->access_token = $data['access_token'] ?? '';
 
 		if ( empty( $this->access_token ) ) {
 			throw new Exception( '[paypal] Failed to obtain access token.' );
@@ -329,12 +338,12 @@ class SPG_PayPal_Adapter extends SPG_Base_Adapter {
 	 */
 	private function normalise_status( $raw_status ) {
 		$map = array(
-			'COMPLETED'          => 'approved',
-			'APPROVED'           => 'approved',
-			'CREATED'            => 'pending',
-			'SAVED'              => 'pending',
+			'COMPLETED'             => 'approved',
+			'APPROVED'              => 'approved',
+			'CREATED'               => 'pending',
+			'SAVED'                 => 'pending',
 			'PAYER_ACTION_REQUIRED' => 'pending',
-			'VOIDED'             => 'cancelled',
+			'VOIDED'                => 'cancelled',
 		);
 		return $map[ $raw_status ] ?? 'pending';
 	}

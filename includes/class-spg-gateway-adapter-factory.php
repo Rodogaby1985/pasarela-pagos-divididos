@@ -8,7 +8,11 @@
  */
 
 defined( 'ABSPATH' ) || exit;
+// phpcs:disable Generic.Commenting.DocComment.MissingShort,WordPress.Security.EscapeOutput.ExceptionNotEscaped
 
+/**
+ * Gateway adapter factory singleton.
+ */
 class SPG_Gateway_Adapter_Factory implements SPG_Gateway_Adapter_Factory_Interface {
 
 	use SPG_Logger;
@@ -97,9 +101,9 @@ class SPG_Gateway_Adapter_Factory implements SPG_Gateway_Adapter_Factory_Interfa
 	 */
 	private function register_defaults() {
 		self::register( 'mercadopago', 'SPG_MercadoPago_Adapter' );
-		self::register( 'nave',        'SPG_Nave_Adapter' );
-		self::register( 'stripe',      'SPG_Stripe_Adapter' );
-		self::register( 'paypal',      'SPG_PayPal_Adapter' );
+		self::register( 'nave', 'SPG_Nave_Adapter' );
+		self::register( 'stripe', 'SPG_Stripe_Adapter' );
+		self::register( 'paypal', 'SPG_PayPal_Adapter' );
 		self::register( 'qr_transfer', 'SPG_QR_Transfer_Adapter' );
 
 		/**

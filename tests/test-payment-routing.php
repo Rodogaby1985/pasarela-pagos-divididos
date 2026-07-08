@@ -71,7 +71,7 @@ $plugin_dir = dirname( __DIR__ );
 require_once $plugin_dir . '/includes/traits/trait-logger.php';
 require_once $plugin_dir . '/includes/traits/trait-security.php';
 require_once $plugin_dir . '/includes/class-gateway-adapter-factory-interface.php';
-require_once $plugin_dir . '/includes/class-payment-routing-engine.php';
+require_once $plugin_dir . '/includes/class-spg-payment-routing-engine.php';
 
 // WordPress stubs (guarded for compatibility with bootstrap.php).
 if ( ! function_exists( 'sanitize_key' ) ) {

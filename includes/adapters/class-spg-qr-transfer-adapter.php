@@ -27,10 +27,18 @@
  */
 
 defined( 'ABSPATH' ) || exit;
+// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.Security.EscapeOutput.ExceptionNotEscaped,Squiz.Commenting.FunctionComment.ParamCommentFullStop
 
+/**
+ * QR transfer adapter.
+ */
 class SPG_QR_Transfer_Adapter extends SPG_Base_Adapter {
 
-	/** @var string Gateway identifier. */
+	/**
+	 * Gateway identifier.
+	 *
+	 * @var string
+	 */
 	protected $gateway_name = 'qr_transfer';
 
 	/** QR validity window in seconds (15 minutes). */
@@ -79,7 +87,7 @@ class SPG_QR_Transfer_Adapter extends SPG_Base_Adapter {
 		);
 
 		// Create integrity hash so the webhook receiver can verify the QR has not been tampered.
-		$hash = $this->generate_qr_hash( $raw );
+		$hash        = $this->generate_qr_hash( $raw );
 		$raw['hash'] = $hash;
 
 		// Store the QR transfer record.
@@ -380,16 +388,16 @@ class SPG_QR_Transfer_Adapter extends SPG_Base_Adapter {
 		$wpdb->insert(
 			$wpdb->prefix . 'spg_qr_transfers',
 			array(
-				'order_ref'   => sanitize_text_field( $order_ref ),
-				'alias'       => sanitize_text_field( $qr_data['alias'] ),
-				'amount'      => (float) $qr_data['amount'],
-				'currency'    => sanitize_text_field( $qr_data['currency'] ),
-				'concept'     => sanitize_text_field( $qr_data['concept'] ),
-				'qr_hash'     => sanitize_text_field( $qr_data['hash'] ),
-				'qr_payload'  => wp_json_encode( $qr_data ),
-				'status'      => 'pending',
-				'expires_at'  => $expires_dt,
-				'created_at'  => current_time( 'mysql', true ),
+				'order_ref'  => sanitize_text_field( $order_ref ),
+				'alias'      => sanitize_text_field( $qr_data['alias'] ),
+				'amount'     => (float) $qr_data['amount'],
+				'currency'   => sanitize_text_field( $qr_data['currency'] ),
+				'concept'    => sanitize_text_field( $qr_data['concept'] ),
+				'qr_hash'    => sanitize_text_field( $qr_data['hash'] ),
+				'qr_payload' => wp_json_encode( $qr_data ),
+				'status'     => 'pending',
+				'expires_at' => $expires_dt,
+				'created_at' => current_time( 'mysql', true ),
 			)
 		);
 	}

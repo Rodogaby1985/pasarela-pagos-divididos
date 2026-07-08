@@ -9,6 +9,9 @@
 
 defined( 'ABSPATH' ) || exit;
 
+/**
+ * Split distribution calculation engine.
+ */
 class SPG_Split_Distribution_Engine {
 
 	use SPG_Logger;
@@ -41,7 +44,7 @@ class SPG_Split_Distribution_Engine {
 		$total_pct    = max( 0.0, min( 100.0, $total_pct ) );
 
 		$shipping_charge = round( $shipping_total * ( $shipping_pct / 100 ), 2 );
-		$total_charge    = round( $order_total   * ( $total_pct    / 100 ), 2 );
+		$total_charge    = round( $order_total * ( $total_pct / 100 ), 2 );
 
 		$result = array(
 			'shipping_amount' => $shipping_charge,
@@ -72,7 +75,7 @@ class SPG_Split_Distribution_Engine {
 	public function validate_rules( array $rules ) {
 		foreach ( $rules as $rule ) {
 			$shipping_pct = (float) ( $rule['shipping_percentage'] ?? 100 );
-			$total_pct    = (float) ( $rule['total_percentage']    ?? 100 );
+			$total_pct    = (float) ( $rule['total_percentage'] ?? 100 );
 
 			if ( $shipping_pct < 0 || $shipping_pct > 100 ) {
 				return new WP_Error(
@@ -115,7 +118,10 @@ class SPG_Split_Distribution_Engine {
 		$grand_total = $shipping_charged + $total_charged;
 
 		if ( $grand_total <= 0 ) {
-			return array( 'shipping_refund' => 0.0, 'total_refund' => 0.0 );
+			return array(
+				'shipping_refund' => 0.0,
+				'total_refund'    => 0.0,
+			);
 		}
 
 		$shipping_ratio = $shipping_charged / $grand_total;

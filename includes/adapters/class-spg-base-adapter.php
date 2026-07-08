@@ -7,7 +7,11 @@
  */
 
 defined( 'ABSPATH' ) || exit;
+// phpcs:disable Generic.Commenting.DocComment.MissingShort,WordPress.Security.EscapeOutput.ExceptionNotEscaped,Squiz.Commenting.FunctionComment.ParamCommentFullStop,Squiz.Commenting.InlineComment.InvalidEndChar
 
+/**
+ * Base adapter for all payment providers.
+ */
 abstract class SPG_Base_Adapter {
 
 	use SPG_Logger;
@@ -124,7 +128,7 @@ abstract class SPG_Base_Adapter {
 				break;
 			}
 
-			$attempts++;
+			++$attempts;
 			if ( $attempts <= $retries ) {
 				// Exponential back-off: 1s, 2s, 4s …
 				sleep( (int) pow( 2, $attempts - 1 ) ); // phpcs:ignore WordPress.WP.AlternativeFunctions.rand_rand

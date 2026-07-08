@@ -44,7 +44,7 @@ if ( ! function_exists( 'get_option' ) ) {
 }
 
 // ── Load the adapter under test ────────────────────────────────────────────
-require_once dirname( __DIR__ ) . '/includes/adapters/class-mercadopago-adapter.php';
+require_once dirname( __DIR__ ) . '/includes/adapters/class-spg-mercadopago-adapter.php';
 
 // ── Testable adapter subclass ──────────────────────────────────────────────
 

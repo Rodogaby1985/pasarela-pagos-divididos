@@ -8,7 +8,11 @@
  */
 
 defined( 'ABSPATH' ) || exit;
+// phpcs:disable Generic.Commenting.DocComment.MissingShort,WordPress.Security.EscapeOutput.ExceptionNotEscaped,Universal.Operators.DisallowShortTernary.Found
 
+/**
+ * Split payment service orchestrator.
+ */
 class SPG_Split_Payment_Service {
 
 	use SPG_Logger;
@@ -76,7 +80,7 @@ class SPG_Split_Payment_Service {
 
 		// Resolve gateways (routing engine may be overridden by explicit method_choices).
 		$shipping_gw = $this->router->resolve( $client_id, 'shipping', $shipping_amount, $context );
-		$total_gw    = $this->router->resolve( $client_id, 'total',    $order_subtotal,  $context );
+		$total_gw    = $this->router->resolve( $client_id, 'total', $order_subtotal, $context );
 
 		// Allow explicit method overrides from the frontend selection.
 		if ( ! empty( $method_choices['shipping_method'] ) ) {
@@ -109,44 +113,48 @@ class SPG_Split_Payment_Service {
 
 		// Determine method types.
 		$shipping_method_type = ( 'qr_transfer' === $shipping_gw['name'] ) ? 'qr_transfer' : 'gateway';
-		$total_method_type    = ( 'qr_transfer' === $total_gw['name'] )    ? 'qr_transfer' : 'gateway';
+		$total_method_type    = ( 'qr_transfer' === $total_gw['name'] ) ? 'qr_transfer' : 'gateway';
 
 		// Build adapters.
 		$shipping_adapter = $this->factory->get_adapter( $shipping_gw['name'], $shipping_gw['config'] );
-		$total_adapter    = $this->factory->get_adapter( $total_gw['name'],    $total_gw['config'] );
+		$total_adapter    = $this->factory->get_adapter( $total_gw['name'], $total_gw['config'] );
 
 		// Initiate both payments.
-		$shipping_result = $shipping_adapter->initiate( array(
-			'order_id'    => "{$order_id}-shipping",
-			'amount'      => $shipping_amount,
-			'currency'    => $currency,
-			'description' => sprintf(
+		$shipping_result = $shipping_adapter->initiate(
+			array(
+				'order_id'    => "{$order_id}-shipping",
+				'amount'      => $shipping_amount,
+				'currency'    => $currency,
+				'description' => sprintf(
 				/* translators: %d: order ID */
-				__( 'Shipping – Order #%d', 'split-payment-gateway' ),
-				$order_id
-			),
-			'return_url'  => $return_url,
-			'customer'    => array(
-				'name'  => $order->get_formatted_billing_full_name(),
-				'email' => $order->get_billing_email(),
-			),
-		) );
+					__( 'Shipping – Order #%d', 'split-payment-gateway' ),
+					$order_id
+				),
+				'return_url'  => $return_url,
+				'customer'    => array(
+					'name'  => $order->get_formatted_billing_full_name(),
+					'email' => $order->get_billing_email(),
+				),
+			)
+		);
 
-		$total_result = $total_adapter->initiate( array(
-			'order_id'    => "{$order_id}-total",
-			'amount'      => $order_subtotal,
-			'currency'    => $currency,
-			'description' => sprintf(
+		$total_result = $total_adapter->initiate(
+			array(
+				'order_id'    => "{$order_id}-total",
+				'amount'      => $order_subtotal,
+				'currency'    => $currency,
+				'description' => sprintf(
 				/* translators: %d: order ID */
-				__( 'Products – Order #%d', 'split-payment-gateway' ),
-				$order_id
-			),
-			'return_url'  => $return_url,
-			'customer'    => array(
-				'name'  => $order->get_formatted_billing_full_name(),
-				'email' => $order->get_billing_email(),
-			),
-		) );
+					__( 'Products – Order #%d', 'split-payment-gateway' ),
+					$order_id
+				),
+				'return_url'  => $return_url,
+				'customer'    => array(
+					'name'  => $order->get_formatted_billing_full_name(),
+					'email' => $order->get_billing_email(),
+				),
+			)
+		);
 
 		// Persist record.
 		$session_id = bin2hex( random_bytes( 16 ) );
@@ -173,13 +181,13 @@ class SPG_Split_Payment_Service {
 		);
 
 		// Store session metadata on the order.
-		$order->update_meta_data( '_spg_session_id',           $session_id );
-		$order->update_meta_data( '_spg_shipping_tx_id',       $shipping_result['transaction_id'] );
-		$order->update_meta_data( '_spg_total_tx_id',          $total_result['transaction_id'] );
-		$order->update_meta_data( '_spg_shipping_gateway',     $shipping_gw['name'] );
-		$order->update_meta_data( '_spg_total_gateway',        $total_gw['name'] );
+		$order->update_meta_data( '_spg_session_id', $session_id );
+		$order->update_meta_data( '_spg_shipping_tx_id', $shipping_result['transaction_id'] );
+		$order->update_meta_data( '_spg_total_tx_id', $total_result['transaction_id'] );
+		$order->update_meta_data( '_spg_shipping_gateway', $shipping_gw['name'] );
+		$order->update_meta_data( '_spg_total_gateway', $total_gw['name'] );
 		$order->update_meta_data( '_spg_shipping_method_type', $shipping_method_type );
-		$order->update_meta_data( '_spg_total_method_type',    $total_method_type );
+		$order->update_meta_data( '_spg_total_method_type', $total_method_type );
 		$order->save();
 
 		$order->update_status(

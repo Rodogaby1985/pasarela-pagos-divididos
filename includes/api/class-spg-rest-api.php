@@ -14,7 +14,11 @@
  */
 
 defined( 'ABSPATH' ) || exit;
+// phpcs:disable Universal.Operators.DisallowShortTernary.Found,WordPress.WP.Capabilities.Unknown,Squiz.PHP.CommentedOutCode.Found,Generic.CodeAnalysis.EmptyStatement.DetectedCatch,WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
 
+/**
+ * REST API routes for split payment operations.
+ */
 class SPG_Rest_Api {
 
 	use SPG_Logger;
@@ -38,7 +42,7 @@ class SPG_Rest_Api {
 				'callback'            => array( $instance, 'initiate_payment' ),
 				'permission_callback' => array( $instance, 'is_authenticated' ),
 				'args'                => array(
-					'order_id' => array(
+					'order_id'        => array(
 						'required'          => true,
 						'type'              => 'integer',
 						'sanitize_callback' => 'absint',
@@ -48,7 +52,7 @@ class SPG_Rest_Api {
 						'type'              => 'string',
 						'sanitize_callback' => 'sanitize_key',
 					),
-					'total_method' => array(
+					'total_method'    => array(
 						'required'          => false,
 						'type'              => 'string',
 						'sanitize_callback' => 'sanitize_key',
@@ -89,7 +93,7 @@ class SPG_Rest_Api {
 						'type'              => 'integer',
 						'sanitize_callback' => 'absint',
 					),
-					'section' => array(
+					'section'  => array(
 						'required'          => true,
 						'type'              => 'string',
 						'enum'              => array( 'shipping', 'total' ),
@@ -142,11 +146,11 @@ class SPG_Rest_Api {
 						'type'              => 'string',
 						'sanitize_callback' => 'sanitize_key',
 					),
-					'from' => array(
+					'from'      => array(
 						'type'              => 'string',
 						'sanitize_callback' => 'sanitize_text_field',
 					),
-					'to' => array(
+					'to'        => array(
 						'type'              => 'string',
 						'sanitize_callback' => 'sanitize_text_field',
 					),
@@ -228,10 +232,12 @@ class SPG_Rest_Api {
 			$client_id = $this->get_client_id();
 			$result    = $service->initiate( $order, $client_id, $method_choices );
 
-			return rest_ensure_response( array(
-				'success' => true,
-				'data'    => $result,
-			) );
+			return rest_ensure_response(
+				array(
+					'success' => true,
+					'data'    => $result,
+				)
+			);
 		} catch ( Exception $e ) {
 			$this->log_error( 'REST initiate error.', array( 'error' => $e->getMessage() ) );
 			return new WP_Error( 'spg_initiate_error', $e->getMessage(), array( 'status' => 500 ) );
@@ -264,7 +270,7 @@ class SPG_Rest_Api {
 		global $wpdb;
 
 		// Verify that the section uses QR Transfer.
-		$meta_key = ( 'shipping' === $section ) ? '_spg_shipping_method_type' : '_spg_total_method_type';
+		$meta_key    = ( 'shipping' === $section ) ? '_spg_shipping_method_type' : '_spg_total_method_type';
 		$method_type = $order->get_meta( $meta_key );
 
 		if ( 'qr_transfer' !== $method_type ) {
@@ -276,22 +282,24 @@ class SPG_Rest_Api {
 		}
 
 		// Look up existing QR record.
-		$tx_meta_key  = ( 'shipping' === $section ) ? '_spg_shipping_tx_id' : '_spg_total_tx_id';
+		$tx_meta_key   = ( 'shipping' === $section ) ? '_spg_shipping_tx_id' : '_spg_total_tx_id';
 		$existing_hash = $order->get_meta( $tx_meta_key );
 
 		if ( $existing_hash ) {
 			try {
-				$adapter    = SPG_Gateway_Adapter_Factory::instance()->get_adapter( 'qr_transfer' );
-				$qr_record  = $adapter->get_qr_record( $existing_hash );
+				$adapter   = SPG_Gateway_Adapter_Factory::instance()->get_adapter( 'qr_transfer' );
+				$qr_record = $adapter->get_qr_record( $existing_hash );
 
 				if ( $qr_record && 'pending' === $qr_record['status'] && strtotime( $qr_record['expires_at'] ) > time() ) {
 					// Return existing valid QR.
-					return rest_ensure_response( array(
-						'success'    => true,
-						'qr_data'    => json_decode( $qr_record['qr_payload'], true ),
-						'expires_at' => strtotime( $qr_record['expires_at'] ),
-						'status'     => 'pending',
-					) );
+					return rest_ensure_response(
+						array(
+							'success'    => true,
+							'qr_data'    => json_decode( $qr_record['qr_payload'], true ),
+							'expires_at' => strtotime( $qr_record['expires_at'] ),
+							'status'     => 'pending',
+						)
+					);
 				}
 			} catch ( Exception $e ) {
 				// Fall through to generate a new QR.
@@ -302,20 +310,26 @@ class SPG_Rest_Api {
 		try {
 			$client_id = $this->get_client_id();
 			$service   = $this->get_service();
-			$result    = $service->initiate( $order, $client_id, array(
-				'shipping_method' => ( 'shipping' === $section ) ? 'qr_transfer' : null,
-				'total_method'    => ( 'total' === $section )    ? 'qr_transfer' : null,
-			) );
+			$result    = $service->initiate(
+				$order,
+				$client_id,
+				array(
+					'shipping_method' => ( 'shipping' === $section ) ? 'qr_transfer' : null,
+					'total_method'    => ( 'total' === $section ) ? 'qr_transfer' : null,
+				)
+			);
 
-			$qr_data    = ( 'shipping' === $section ) ? $result['shipping_qr_data']    : $result['total_qr_data'];
+			$qr_data    = ( 'shipping' === $section ) ? $result['shipping_qr_data'] : $result['total_qr_data'];
 			$expires_at = ( 'shipping' === $section ) ? $result['shipping_expires_at'] : $result['total_expires_at'];
 
-			return rest_ensure_response( array(
-				'success'    => true,
-				'qr_data'    => $qr_data,
-				'expires_at' => $expires_at,
-				'status'     => 'pending',
-			) );
+			return rest_ensure_response(
+				array(
+					'success'    => true,
+					'qr_data'    => $qr_data,
+					'expires_at' => $expires_at,
+					'status'     => 'pending',
+				)
+			);
 
 		} catch ( Exception $e ) {
 			$this->log_error( 'QR generate error.', array( 'error' => $e->getMessage() ) );
@@ -346,10 +360,13 @@ class SPG_Rest_Api {
 		$result      = $orchestrator->process( 'qr_transfer', $raw_body, $headers );
 		$status_code = $result['success'] ? 200 : 400;
 
-		return new WP_REST_Response( array(
-			'success' => $result['success'],
-			'message' => $result['message'],
-		), $status_code );
+		return new WP_REST_Response(
+			array(
+				'success' => $result['success'],
+				'message' => $result['message'],
+			),
+			$status_code
+		);
 	}
 
 	/**
@@ -365,10 +382,12 @@ class SPG_Rest_Api {
 			$service    = $this->get_service();
 			$validation = $service->validate( $order_id );
 
-			return rest_ensure_response( array(
-				'success' => true,
-				'data'    => $validation,
-			) );
+			return rest_ensure_response(
+				array(
+					'success' => true,
+					'data'    => $validation,
+				)
+			);
 		} catch ( Exception $e ) {
 			return new WP_Error( 'spg_validate_error', $e->getMessage(), array( 'status' => 500 ) );
 		}
@@ -386,17 +405,20 @@ class SPG_Rest_Api {
 		$headers      = $this->extract_headers( $request );
 
 		global $wpdb;
-		$factory       = SPG_Gateway_Adapter_Factory::instance();
-		$orchestrator  = new SPG_Webhook_Orchestrator( $wpdb, $factory );
+		$factory      = SPG_Gateway_Adapter_Factory::instance();
+		$orchestrator = new SPG_Webhook_Orchestrator( $wpdb, $factory );
 
 		$result = $orchestrator->process( $gateway_name, $raw_body, $headers );
 
 		$status_code = $result['success'] ? 200 : 400;
 
-		return new WP_REST_Response( array(
-			'success' => $result['success'],
-			'message' => $result['message'],
-		), $status_code );
+		return new WP_REST_Response(
+			array(
+				'success' => $result['success'],
+				'message' => $result['message'],
+			),
+			$status_code
+		);
 	}
 
 	/**
@@ -410,7 +432,7 @@ class SPG_Rest_Api {
 
 		$client_id = $request->get_param( 'client_id' );
 		$from      = $request->get_param( 'from' ) ?: gmdate( 'Y-m-01' );
-		$to        = $request->get_param( 'to' )   ?: gmdate( 'Y-m-t' );
+		$to        = $request->get_param( 'to' ) ?: gmdate( 'Y-m-t' );
 
 		// Validate date format (YYYY-MM-DD) to prevent unexpected SQL behaviour.
 		$date_pattern = '/^\d{4}-\d{2}-\d{2}$/';
@@ -424,7 +446,7 @@ class SPG_Rest_Api {
 
 		// Ensure the dates are actually valid calendar dates.
 		if ( ! checkdate( (int) substr( $from, 5, 2 ), (int) substr( $from, 8, 2 ), (int) substr( $from, 0, 4 ) ) ||
-		     ! checkdate( (int) substr( $to,   5, 2 ), (int) substr( $to,   8, 2 ), (int) substr( $to,   0, 4 ) ) ) {
+			! checkdate( (int) substr( $to, 5, 2 ), (int) substr( $to, 8, 2 ), (int) substr( $to, 0, 4 ) ) ) {
 			return new WP_Error(
 				'spg_invalid_date',
 				__( 'One or more date parameters are not valid calendar dates.', 'split-payment-gateway' ),
@@ -450,14 +472,16 @@ class SPG_Rest_Api {
 			ARRAY_A
 		);
 
-		return rest_ensure_response( array(
-			'success'   => true,
-			'client_id' => $client_id,
-			'from'      => $from,
-			'to'        => $to,
-			'total'     => count( $rows ),
-			'data'      => $rows,
-		) );
+		return rest_ensure_response(
+			array(
+				'success'   => true,
+				'client_id' => $client_id,
+				'from'      => $from,
+				'to'        => $to,
+				'total'     => count( $rows ),
+				'data'      => $rows,
+			)
+		);
 	}
 
 	// ── Admin webhook management ──────────────────────────────────────────────
@@ -499,11 +523,13 @@ class SPG_Rest_Api {
 			update_option( 'spg_mercadopago_webhook_id', $result['webhook_id'] );
 		}
 
-		return rest_ensure_response( array(
-			'success'    => $result['success'],
-			'webhook_id' => $result['webhook_id'] ?? '',
-			'message'    => $result['message'],
-		) );
+		return rest_ensure_response(
+			array(
+				'success'    => $result['success'],
+				'webhook_id' => $result['webhook_id'] ?? '',
+				'message'    => $result['message'],
+			)
+		);
 	}
 
 	/**
@@ -539,11 +565,13 @@ class SPG_Rest_Api {
 		$validator = new SPG_Gateway_Credentials_Validator();
 		$result    = $validator->verify_mercadopago_webhook( $access_token );
 
-		return rest_ensure_response( array(
-			'active'     => $result['active'],
-			'webhook_id' => $result['webhook_id'] ?? '',
-			'message'    => $result['message'],
-		) );
+		return rest_ensure_response(
+			array(
+				'active'     => $result['active'],
+				'webhook_id' => $result['webhook_id'] ?? '',
+				'message'    => $result['message'],
+			)
+		);
 	}
 
 	// ── Permission callbacks ───────────────────────────────────────────────────

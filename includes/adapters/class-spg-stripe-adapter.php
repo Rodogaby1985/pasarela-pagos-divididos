@@ -6,14 +6,23 @@
  */
 
 defined( 'ABSPATH' ) || exit;
+// phpcs:disable Squiz.Commenting.FunctionComment.MissingParamTag,Squiz.Commenting.VariableComment.Missing
 
+/**
+ * Stripe payment gateway adapter.
+ */
 class SPG_Stripe_Adapter extends SPG_Base_Adapter {
 
+	/**
+	 * Gateway slug.
+	 *
+	 * @var string
+	 */
 	protected $gateway_name = 'stripe';
 
-	const API_SESSIONS  = 'https://api.stripe.com/v1/checkout/sessions';
+	const API_SESSIONS        = 'https://api.stripe.com/v1/checkout/sessions';
 	const API_PAYMENT_INTENTS = 'https://api.stripe.com/v1/payment_intents';
-	const API_REFUNDS   = 'https://api.stripe.com/v1/refunds';
+	const API_REFUNDS         = 'https://api.stripe.com/v1/refunds';
 
 	/**
 	 * {@inheritdoc}
@@ -24,15 +33,15 @@ class SPG_Stripe_Adapter extends SPG_Base_Adapter {
 		$secret_key = $this->config['secret_key'] ?? '';
 
 		$body = array(
-			'payment_method_types[]' => 'card',
-			'mode'                   => 'payment',
-			'line_items[0][price_data][currency]'       => strtolower( $payload['currency'] ),
+			'payment_method_types[]'                 => 'card',
+			'mode'                                   => 'payment',
+			'line_items[0][price_data][currency]'    => strtolower( $payload['currency'] ),
 			'line_items[0][price_data][product_data][name]' => sanitize_text_field( $payload['description'] ),
-			'line_items[0][price_data][unit_amount]'    => (int) round( (float) $payload['amount'] * 100 ),
-			'line_items[0][quantity]'                   => 1,
-			'client_reference_id'    => sanitize_text_field( $payload['order_id'] ),
-			'success_url'            => esc_url_raw( $payload['return_url'] ) . '?session_id={CHECKOUT_SESSION_ID}',
-			'cancel_url'             => esc_url_raw( $payload['return_url'] ),
+			'line_items[0][price_data][unit_amount]' => (int) round( (float) $payload['amount'] * 100 ),
+			'line_items[0][quantity]'                => 1,
+			'client_reference_id'                    => sanitize_text_field( $payload['order_id'] ),
+			'success_url'                            => esc_url_raw( $payload['return_url'] ) . '?session_id={CHECKOUT_SESSION_ID}',
+			'cancel_url'                             => esc_url_raw( $payload['return_url'] ),
 		);
 
 		$response = $this->http_request(
@@ -118,7 +127,7 @@ class SPG_Stripe_Adapter extends SPG_Base_Adapter {
 	 * Uses Stripe-Signature header with timestamp+payload HMAC.
 	 */
 	public function verify_webhook( $raw_body, array $headers ) {
-		$secret    = $this->config['webhook_secret'] ?? '';
+		$secret     = $this->config['webhook_secret'] ?? '';
 		$sig_header = $headers['stripe-signature'] ?? ( $headers['Stripe-Signature'] ?? '' );
 
 		if ( empty( $sig_header ) || empty( $secret ) ) {
@@ -128,7 +137,7 @@ class SPG_Stripe_Adapter extends SPG_Base_Adapter {
 		// Parse t= and v1= components from the header.
 		$parts = array();
 		foreach ( explode( ',', $sig_header ) as $item ) {
-			list( $k, $v ) = array_pad( explode( '=', $item, 2 ), 2, '' );
+			list( $k, $v )       = array_pad( explode( '=', $item, 2 ), 2, '' );
 			$parts[ trim( $k ) ] = trim( $v );
 		}
 

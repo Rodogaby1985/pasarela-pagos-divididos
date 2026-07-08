@@ -106,34 +106,34 @@ split-payment-gateway-woocommerce/
 ├── .env.example
 │
 ├── includes/
-│   ├── class-split-payment-gateway.php     ← WooCommerce Payment Gateway class
-│   ├── class-payment-routing-engine.php    ← Gateway routing logic
-│   ├── class-split-distribution-engine.php ← Amount split calculations
-│   ├── class-gateway-adapter-factory.php   ← Adapter registry & factory
-│   ├── class-webhook-orchestrator.php      ← Unified webhook handler
-│   ├── class-split-payment-service.php     ← High-level payment orchestration
+│   ├── class-spg-split-payment-gateway.php     ← WooCommerce Payment Gateway class
+│   ├── class-spg-payment-routing-engine.php    ← Gateway routing logic
+│   ├── class-spg-split-distribution-engine.php ← Amount split calculations
+│   ├── class-spg-gateway-adapter-factory.php   ← Adapter registry & factory
+│   ├── class-spg-webhook-orchestrator.php      ← Unified webhook handler
+│   ├── class-spg-split-payment-service.php     ← High-level payment orchestration
 │   │
 │   ├── adapters/
-│   │   ├── class-base-adapter.php
-│   │   ├── class-mercadopago-adapter.php
-│   │   ├── class-nave-adapter.php
-│   │   ├── class-stripe-adapter.php
-│   │   └── class-paypal-adapter.php
+│   │   ├── class-spg-base-adapter.php
+│   │   ├── class-spg-mercadopago-adapter.php
+│   │   ├── class-spg-nave-adapter.php
+│   │   ├── class-spg-stripe-adapter.php
+│   │   └── class-spg-paypal-adapter.php
 │   │
 │   ├── api/
-│   │   └── class-rest-api.php
+│   │   └── class-spg-rest-api.php
 │   │
 │   ├── database/
 │   │   ├── schema.sql
-│   │   └── class-migrations.php
+│   │   └── class-spg-migrations.php
 │   │
 │   └── traits/
 │       ├── trait-security.php
 │       └── trait-logger.php
 │
 ├── admin/
-│   ├── class-admin-settings.php
-│   ├── class-admin-dashboard.php
+│   ├── class-spg-admin-settings.php
+│   ├── class-spg-admin-dashboard.php
 │   ├── templates/
 │   │   ├── settings-page.php
 │   │   └── dashboard-page.php
