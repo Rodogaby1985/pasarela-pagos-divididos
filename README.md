@@ -155,10 +155,38 @@ split-payment-gateway-woocommerce/
 
 ## Installation
 
-1. Copy (or clone) the plugin folder to `wp-content/plugins/split-payment-gateway-woocommerce/`.
-2. Activate from **WordPress Admin → Plugins**.
-3. The plugin will automatically create all required database tables on activation.
-4. Navigate to **WooCommerce → Split Payment** to configure gateways and split rules.
+### Easy Installation (No Dependencies Required)
+
+For end users and clients on shared or restrictive hosting:
+
+1. **Download** the pre-compiled package from [Releases](https://github.com/Rodogaby1985/pasarela-pagos-divididos/releases)
+   - File: `split-payment-plugin-READY.zip`
+2. **Upload** via **WordPress Admin → Plugins → Add New → Upload Plugin**
+3. **Activate** the plugin
+4. **Configure** in **WooCommerce → Split Payment**
+
+No Composer, Node.js, npm, SSH, or command-line access required. See the full [Installation Guide](docs/INSTALLATION.md).
+
+### For Developers (Build from Source)
+
+```bash
+git clone https://github.com/Rodogaby1985/pasarela-pagos-divididos.git
+cd pasarela-pagos-divididos
+composer install
+npm install
+npm run build
+```
+
+Or generate a distributable ZIP with:
+
+```bash
+# Linux / macOS
+chmod +x build.sh
+./build.sh
+
+# Windows
+build.bat
+```
 
 ---
 
