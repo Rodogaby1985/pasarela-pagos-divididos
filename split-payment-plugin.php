@@ -100,6 +100,7 @@ final class Split_Payment_Gateway_Plugin {
 		require_once SPG_PLUGIN_DIR . 'includes/class-split-distribution-engine.php';
 		require_once SPG_PLUGIN_DIR . 'includes/class-webhook-orchestrator.php';
 		require_once SPG_PLUGIN_DIR . 'includes/class-split-payment-service.php';
+		require_once SPG_PLUGIN_DIR . 'includes/class-gateway-credentials-validator.php';
 
 		// WooCommerce Gateway
 		require_once SPG_PLUGIN_DIR . 'includes/class-split-payment-gateway.php';

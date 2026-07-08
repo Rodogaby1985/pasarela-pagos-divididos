@@ -141,15 +141,24 @@
 
     // ── Helpers ───────────────────────────────────────────────────────────────
 
-    function ajaxAction(action, data, onSuccess) {
+    function ajaxAction(action, data, onSuccess, onError) {
         $.post(ajaxUrl, { action, nonce, ...data }, function (response) {
             if (response.success) {
-                onSuccess(response);
+                if (typeof onSuccess === 'function') onSuccess(response.data || response);
             } else {
-                showNotice(response.data?.message || i18n.error, 'error');
+                if (typeof onError === 'function') {
+                    onError(response.data || {});
+                } else {
+                    showNotice(response.data?.message || i18n.error, 'error');
+                }
             }
         }).fail(function () {
-            showNotice(i18n.error, 'error');
+            const msg = i18n.error || 'Request failed.';
+            if (typeof onError === 'function') {
+                onError({ message: msg });
+            } else {
+                showNotice(msg, 'error');
+            }
         });
     }
 
@@ -250,6 +259,101 @@
         });
 
         return data;
+    }
+
+    // ── Gateways configuration page (settings-page-gateways.php) ──────────────
+
+    // Save MercadoPago settings.
+    $('#spg-mp-save').on('click', function () {
+        const data = {
+            mp_enabled:      $('#spg-mp-enabled').is(':checked') ? 'yes' : 'no',
+            mp_sandbox:      $('#spg-mp-sandbox').val(),
+            mp_access_token: $('#spg-mp-access-token').val(),
+            mp_user_id:      $('#spg-mp-user-id').val(),
+        };
+        ajaxAction('spg_save_mp_settings', data, function () {
+            showGwNotice(i18n.saved, 'success');
+        });
+    });
+
+    // Verify MercadoPago credentials.
+    $('#spg-mp-verify-credentials').on('click', function () {
+        const $btn  = $(this);
+        const $stat = $('#spg-mp-credentials-status');
+        $btn.prop('disabled', true).text(i18n.verifying || 'Verifying...');
+        $stat.hide();
+
+        const data = {
+            mp_access_token: $('#spg-mp-access-token').val(),
+            mp_user_id:      $('#spg-mp-user-id').val(),
+        };
+
+        ajaxAction('spg_verify_mp_credentials', data, function (response) {
+            $btn.prop('disabled', false).text('Verify Credentials');
+            $stat.text('✅ ' + (response.message || i18n.credentialsOk))
+                 .removeClass('spg-status-error').addClass('spg-status-active')
+                 .show();
+        }, function (response) {
+            $btn.prop('disabled', false).text('Verify Credentials');
+            $stat.text('❌ ' + (response.message || i18n.error))
+                 .removeClass('spg-status-active').addClass('spg-status-error')
+                 .show();
+        });
+    });
+
+    // Create / verify MercadoPago webhook.
+    $('#spg-mp-create-webhook').on('click', function () {
+        const $btn  = $(this);
+        const $stat = $('#spg-mp-webhook-status');
+        $btn.prop('disabled', true).text(i18n.creating || 'Creating webhook...');
+        $stat.hide();
+
+        const data = {
+            mp_access_token: $('#spg-mp-access-token').val(),
+        };
+
+        ajaxAction('spg_create_mp_webhook', data, function (response) {
+            $btn.prop('disabled', false).text('Create / Verify Webhook');
+            $stat.text('✅ ' + (response.message || i18n.webhookCreated))
+                 .removeClass('spg-status-error').addClass('spg-status-active')
+                 .show();
+        }, function (response) {
+            $btn.prop('disabled', false).text('Create / Verify Webhook');
+            $stat.text('❌ ' + (response.message || i18n.error))
+                 .removeClass('spg-status-active').addClass('spg-status-error')
+                 .show();
+        });
+    });
+
+    // Save QR Transfer settings (gateways page).
+    $('#spg-qr-save').on('click', function () {
+        const data = {
+            qr_enabled:          $('#spg-qr-enabled').is(':checked') ? 'yes' : 'no',
+            qr_alias_subtotal:   $('#spg-qr-alias-subtotal').val(),
+            qr_cbu_subtotal:     $('#spg-qr-cbu-subtotal').val(),
+            qr_holder_subtotal:  $('#spg-qr-holder-subtotal').val(),
+            qr_alias_shipping:   $('#spg-qr-alias-shipping').val(),
+            qr_cbu_shipping:     $('#spg-qr-cbu-shipping').val(),
+            qr_holder_shipping:  $('#spg-qr-holder-shipping').val(),
+            qr_webhook_secret:   $('#spg-qr-webhook-secret').val(),
+        };
+        ajaxAction('spg_save_qr_gateways_settings', data, function () {
+            showGwNotice(i18n.saved, 'success');
+        });
+    });
+
+    // Show a notice on the gateways page.
+    function showGwNotice(message, type) {
+        const $el = $('#spg-gw-notice');
+        if (!$el.length) {
+            showNotice(message, type);
+            return;
+        }
+        $el.removeClass('notice-success notice-error')
+           .addClass('notice notice-' + (type === 'success' ? 'success' : 'error'))
+           .html('<p>' + message + '</p>')
+           .show();
+        setTimeout(function () { $el.fadeOut(); }, 3000);
     }
 
 }(jQuery));

@@ -18,6 +18,7 @@ defined( 'ABSPATH' ) || exit;
 class SPG_Rest_Api {
 
 	use SPG_Logger;
+	use SPG_Security;
 
 	const NAMESPACE = 'spg/v1';
 
@@ -148,6 +149,44 @@ class SPG_Rest_Api {
 					'to' => array(
 						'type'              => 'string',
 						'sanitize_callback' => 'sanitize_text_field',
+					),
+				),
+			)
+		);
+
+		// Admin: create a webhook in MercadoPago.
+		register_rest_route(
+			self::NAMESPACE,
+			'/admin/webhook/create',
+			array(
+				'methods'             => WP_REST_Server::CREATABLE,
+				'callback'            => array( $instance, 'admin_create_webhook' ),
+				'permission_callback' => array( $instance, 'is_admin' ),
+				'args'                => array(
+					'gateway' => array(
+						'required'          => false,
+						'type'              => 'string',
+						'default'           => 'mercadopago',
+						'sanitize_callback' => 'sanitize_key',
+					),
+				),
+			)
+		);
+
+		// Admin: verify an active webhook in MercadoPago.
+		register_rest_route(
+			self::NAMESPACE,
+			'/admin/webhook/verify',
+			array(
+				'methods'             => WP_REST_Server::READABLE,
+				'callback'            => array( $instance, 'admin_verify_webhook' ),
+				'permission_callback' => array( $instance, 'is_admin' ),
+				'args'                => array(
+					'gateway' => array(
+						'required'          => false,
+						'type'              => 'string',
+						'default'           => 'mercadopago',
+						'sanitize_callback' => 'sanitize_key',
 					),
 				),
 			)
@@ -421,6 +460,92 @@ class SPG_Rest_Api {
 		) );
 	}
 
+	// ── Admin webhook management ──────────────────────────────────────────────
+
+	/**
+	 * POST /spg/v1/admin/webhook/create
+	 *
+	 * Creates a webhook in the configured gateway (currently MercadoPago).
+	 *
+	 * @param WP_REST_Request $request Incoming request.
+	 * @return WP_REST_Response|WP_Error
+	 */
+	public function admin_create_webhook( WP_REST_Request $request ) {
+		$gateway = $request->get_param( 'gateway' ) ?: 'mercadopago';
+
+		if ( 'mercadopago' !== $gateway ) {
+			return new WP_Error(
+				'spg_unsupported_gateway',
+				__( 'Auto-webhook creation is only supported for MercadoPago.', 'split-payment-gateway' ),
+				array( 'status' => 400 )
+			);
+		}
+
+		$encrypted    = get_option( 'spg_mp_access_token', '' );
+		$access_token = $encrypted ? $this->decrypt_access_token( $encrypted ) : '';
+
+		if ( empty( $access_token ) ) {
+			return new WP_Error(
+				'spg_no_credentials',
+				__( 'MercadoPago Access Token is not configured.', 'split-payment-gateway' ),
+				array( 'status' => 400 )
+			);
+		}
+
+		$validator = new SPG_Gateway_Credentials_Validator();
+		$result    = $validator->create_mercadopago_webhook( $access_token );
+
+		if ( $result['success'] && ! empty( $result['webhook_id'] ) ) {
+			update_option( 'spg_mercadopago_webhook_id', $result['webhook_id'] );
+		}
+
+		return rest_ensure_response( array(
+			'success'    => $result['success'],
+			'webhook_id' => $result['webhook_id'] ?? '',
+			'message'    => $result['message'],
+		) );
+	}
+
+	/**
+	 * GET /spg/v1/admin/webhook/verify
+	 *
+	 * Verifies whether a webhook is registered and active.
+	 *
+	 * @param WP_REST_Request $request Incoming request.
+	 * @return WP_REST_Response|WP_Error
+	 */
+	public function admin_verify_webhook( WP_REST_Request $request ) {
+		$gateway = $request->get_param( 'gateway' ) ?: 'mercadopago';
+
+		if ( 'mercadopago' !== $gateway ) {
+			return new WP_Error(
+				'spg_unsupported_gateway',
+				__( 'Webhook verification is only supported for MercadoPago.', 'split-payment-gateway' ),
+				array( 'status' => 400 )
+			);
+		}
+
+		$encrypted    = get_option( 'spg_mp_access_token', '' );
+		$access_token = $encrypted ? $this->decrypt_access_token( $encrypted ) : '';
+
+		if ( empty( $access_token ) ) {
+			return new WP_Error(
+				'spg_no_credentials',
+				__( 'MercadoPago Access Token is not configured.', 'split-payment-gateway' ),
+				array( 'status' => 400 )
+			);
+		}
+
+		$validator = new SPG_Gateway_Credentials_Validator();
+		$result    = $validator->verify_mercadopago_webhook( $access_token );
+
+		return rest_ensure_response( array(
+			'active'     => $result['active'],
+			'webhook_id' => $result['webhook_id'] ?? '',
+			'message'    => $result['message'],
+		) );
+	}
+
 	// ── Permission callbacks ───────────────────────────────────────────────────
 
 	/**
@@ -448,6 +573,21 @@ class SPG_Rest_Api {
 	}
 
 	// ── Private helpers ────────────────────────────────────────────────────────
+
+	/**
+	 * Decrypt a stored (AES-256) access token.
+	 *
+	 * @param string $encrypted Base64-encoded ciphertext.
+	 * @return string Plaintext token, or empty string on failure.
+	 */
+	private function decrypt_access_token( $encrypted ) {
+		try {
+			$result = $this->decrypt( $encrypted );
+			return is_string( $result ) ? $result : '';
+		} catch ( Exception $e ) {
+			return '';
+		}
+	}
 
 	/**
 	 * Build and return the service instance.
