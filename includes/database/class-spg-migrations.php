@@ -26,7 +26,77 @@ class SPG_Migrations {
 		$instance = new self();
 		$instance->create_tables();
 		$instance->run_upgrades();
+		$instance->verify_tables_exist();
 		update_option( 'spg_version', self::SCHEMA_VERSION );
+	}
+
+	/**
+	 * Return full table names required by the plugin.
+	 *
+	 * @return array
+	 */
+	private static function get_required_tables() {
+		global $wpdb;
+
+		return array(
+			$wpdb->prefix . 'spg_split_payments',
+			$wpdb->prefix . 'spg_client_split_rules',
+			$wpdb->prefix . 'spg_client_gateways',
+			$wpdb->prefix . 'spg_webhook_logs',
+			$wpdb->prefix . 'spg_transaction_reconciliation',
+			$wpdb->prefix . 'spg_qr_transfers',
+		);
+	}
+
+	/**
+	 * Return missing plugin tables.
+	 *
+	 * @return array
+	 */
+	public static function get_missing_tables() {
+		global $wpdb;
+
+		$missing_tables = array();
+
+		foreach ( self::get_required_tables() as $table_name ) {
+			$table_exists = $wpdb->get_var(
+				$wpdb->prepare(
+					'SHOW TABLES LIKE %s',
+					$table_name
+				)
+			);
+
+			if ( $table_exists !== $table_name ) {
+				$missing_tables[] = $table_name;
+			}
+		}
+
+		return $missing_tables;
+	}
+
+	/**
+	 * Verify that all required tables exist and log errors when any are missing.
+	 *
+	 * @return bool
+	 */
+	public static function verify_tables_exist() {
+		$instance       = new self();
+		$missing_tables = self::get_missing_tables();
+
+		if ( empty( $missing_tables ) ) {
+			return true;
+		}
+
+		foreach ( $missing_tables as $missing_table ) {
+			$instance->log_error(
+				'SPG missing database table.',
+				array(
+					'table' => $missing_table,
+				)
+			);
+		}
+
+		return false;
 	}
 
 	/**
@@ -95,7 +165,10 @@ class SPG_Migrations {
 	private function create_tables() {
 		global $wpdb;
 
-		require_once ABSPATH . 'wp-admin/includes/upgrade.php';
+		$upgrade_file = ABSPATH . 'wp-admin/includes/upgrade.php';
+		if ( file_exists( $upgrade_file ) ) {
+			require_once $upgrade_file;
+		}
 
 		$charset_collate = $wpdb->get_charset_collate();
 
@@ -207,11 +280,13 @@ class SPG_Migrations {
 			KEY `reconciled`       (`reconciled`)
 		) $charset_collate;";
 
-		dbDelta( $sql_split_payments );
-		dbDelta( $sql_split_rules );
-		dbDelta( $sql_client_gateways );
-		dbDelta( $sql_webhook_logs );
-		dbDelta( $sql_reconciliation );
+		$results = array();
+
+		$results = array_merge( $results, dbDelta( $sql_split_payments ) );
+		$results = array_merge( $results, dbDelta( $sql_split_rules ) );
+		$results = array_merge( $results, dbDelta( $sql_client_gateways ) );
+		$results = array_merge( $results, dbDelta( $sql_webhook_logs ) );
+		$results = array_merge( $results, dbDelta( $sql_reconciliation ) );
 
 		// ── 6. QR Transfers ────────────────────────────────────────────────────
 		$sql_qr_transfers = "CREATE TABLE IF NOT EXISTS `{$wpdb->prefix}spg_qr_transfers` (
@@ -234,8 +309,22 @@ class SPG_Migrations {
 			KEY `expires_at`   (`expires_at`)
 		) $charset_collate;";
 
-		dbDelta( $sql_qr_transfers );
+		$results = array_merge( $results, dbDelta( $sql_qr_transfers ) );
 
-		$this->log_info( 'SPG database tables created/verified.' );
+		if ( ! empty( $wpdb->last_error ) ) {
+			$this->log_error(
+				'SPG database migration encountered a SQL error.',
+				array(
+					'last_error' => $wpdb->last_error,
+				)
+			);
+		}
+
+		$this->log_info(
+			'SPG database tables created/verified.',
+			array(
+				'dbdelta_results' => $results,
+			)
+		);
 	}
 }

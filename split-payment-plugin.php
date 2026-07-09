@@ -55,6 +55,8 @@ function spg_woocommerce_missing_notice() {
  */
 final class Split_Payment_Gateway_Plugin {
 
+	use SPG_Logger;
+
 	/**
 	 * Singleton plugin instance.
 	 *
@@ -146,6 +148,9 @@ final class Split_Payment_Gateway_Plugin {
 		// Load plugin text domain.
 		add_action( 'init', array( $this, 'load_textdomain' ) );
 
+		// Ensure database tables exist in every request.
+		add_action( 'wp_loaded', array( $this, 'ensure_database_ready' ) );
+
 		// Enqueue frontend assets on checkout.
 		add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_frontend_assets' ) );
 
@@ -158,7 +163,41 @@ final class Split_Payment_Gateway_Plugin {
 	 */
 	public function activate() {
 		SPG_Migrations::run();
+		$this->ensure_database_ready();
 		flush_rewrite_rules();
+	}
+
+	/**
+	 * Ensure required DB tables exist. Re-run migrations as fallback when needed.
+	 */
+	public function ensure_database_ready() {
+		$missing_tables = SPG_Migrations::get_missing_tables();
+
+		if ( empty( $missing_tables ) ) {
+			return;
+		}
+
+		$this->log_warning(
+			'SPG missing database tables detected. Running fallback migrations.',
+			array(
+				'missing_tables' => $missing_tables,
+			)
+		);
+
+		SPG_Migrations::run();
+
+		$missing_after_migration = SPG_Migrations::get_missing_tables();
+		if ( empty( $missing_after_migration ) ) {
+			$this->log_info( 'SPG fallback migrations completed successfully.' );
+			return;
+		}
+
+		$this->log_error(
+			'SPG fallback migrations failed to create all required tables.',
+			array(
+				'missing_tables' => $missing_after_migration,
+			)
+		);
 	}
 
 	/**
