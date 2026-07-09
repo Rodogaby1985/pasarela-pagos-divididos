@@ -21,7 +21,8 @@ class SPG_Mock_Wpdb_Migrations {
 
 	public function prepare( string $query, ...$args ): string {
 		foreach ( $args as $arg ) {
-			$query = preg_replace( '/%s/', "'" . addslashes( (string) $arg ) . "'", $query, 1 );
+			$escaped = str_replace( "'", "''", (string) $arg );
+			$query   = preg_replace( '/%s/', "'" . $escaped . "'", $query, 1 );
 		}
 
 		return $query;

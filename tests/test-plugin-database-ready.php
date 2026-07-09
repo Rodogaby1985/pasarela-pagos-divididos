@@ -21,7 +21,8 @@ class SPG_Mock_Wpdb_Plugin {
 
 	public function prepare( string $query, ...$args ): string {
 		foreach ( $args as $arg ) {
-			$query = preg_replace( '/%s/', "'" . addslashes( (string) $arg ) . "'", $query, 1 );
+			$escaped = str_replace( "'", "''", (string) $arg );
+			$query   = preg_replace( '/%s/', "'" . $escaped . "'", $query, 1 );
 		}
 
 		return $query;
@@ -137,7 +138,7 @@ class Test_Plugin_Database_Ready extends TestCase {
 		$spg_test_options = array();
 	}
 
-	public function test_ensure_database_ready_runs_migrations_when_tables_are_missing() {
+	public function test_ensure_database_ready_runs_migrations_when_some_tables_are_missing() {
 		$this->db->set_existing_tables( array( 'wp_spg_split_payments' ) );
 
 		$instance = $this->create_plugin_instance_without_constructor();
@@ -149,7 +150,6 @@ class Test_Plugin_Database_Ready extends TestCase {
 
 	public function test_ensure_database_ready_skips_migrations_when_tables_exist() {
 		$this->db->set_existing_tables( $this->get_all_tables() );
-		update_option( 'spg_version', 'before-fallback' );
 
 		$instance = $this->create_plugin_instance_without_constructor();
 		$instance->ensure_database_ready();

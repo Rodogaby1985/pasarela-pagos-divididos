@@ -148,7 +148,7 @@ final class Split_Payment_Gateway_Plugin {
 		// Load plugin text domain.
 		add_action( 'init', array( $this, 'load_textdomain' ) );
 
-		// Ensure database tables exist in every request.
+		// Ensure database tables exist in every request (self-healing requirement).
 		add_action( 'wp_loaded', array( $this, 'ensure_database_ready' ) );
 
 		// Enqueue frontend assets on checkout.
@@ -163,7 +163,6 @@ final class Split_Payment_Gateway_Plugin {
 	 */
 	public function activate() {
 		SPG_Migrations::run();
-		$this->ensure_database_ready();
 		flush_rewrite_rules();
 	}
 

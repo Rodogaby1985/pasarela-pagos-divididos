@@ -26,6 +26,7 @@ class SPG_Migrations {
 		$instance = new self();
 		$instance->create_tables();
 		$instance->run_upgrades();
+		// Verification logs missing tables when needed.
 		$instance->verify_tables_exist();
 		update_option( 'spg_version', self::SCHEMA_VERSION );
 	}
@@ -80,12 +81,13 @@ class SPG_Migrations {
 	 * @return bool
 	 */
 	public static function verify_tables_exist() {
-		$instance       = new self();
 		$missing_tables = self::get_missing_tables();
 
 		if ( empty( $missing_tables ) ) {
 			return true;
 		}
+
+		$instance = new self();
 
 		foreach ( $missing_tables as $missing_table ) {
 			$instance->log_error(
@@ -168,6 +170,14 @@ class SPG_Migrations {
 		$upgrade_file = ABSPATH . 'wp-admin/includes/upgrade.php';
 		if ( file_exists( $upgrade_file ) ) {
 			require_once $upgrade_file;
+		} elseif ( ! function_exists( 'dbDelta' ) ) {
+			$this->log_error(
+				'SPG migration bootstrap failed: upgrade.php is missing and dbDelta() is unavailable.',
+				array(
+					'upgrade_file' => $upgrade_file,
+				)
+			);
+			return;
 		}
 
 		$charset_collate = $wpdb->get_charset_collate();
@@ -280,13 +290,11 @@ class SPG_Migrations {
 			KEY `reconciled`       (`reconciled`)
 		) $charset_collate;";
 
-		$results = array();
-
-		$results = array_merge( $results, dbDelta( $sql_split_payments ) );
-		$results = array_merge( $results, dbDelta( $sql_split_rules ) );
-		$results = array_merge( $results, dbDelta( $sql_client_gateways ) );
-		$results = array_merge( $results, dbDelta( $sql_webhook_logs ) );
-		$results = array_merge( $results, dbDelta( $sql_reconciliation ) );
+		$migration_results = dbDelta( $sql_split_payments );
+		$migration_results = array_merge( $migration_results, dbDelta( $sql_split_rules ) );
+		$migration_results = array_merge( $migration_results, dbDelta( $sql_client_gateways ) );
+		$migration_results = array_merge( $migration_results, dbDelta( $sql_webhook_logs ) );
+		$migration_results = array_merge( $migration_results, dbDelta( $sql_reconciliation ) );
 
 		// ── 6. QR Transfers ────────────────────────────────────────────────────
 		$sql_qr_transfers = "CREATE TABLE IF NOT EXISTS `{$wpdb->prefix}spg_qr_transfers` (
@@ -309,7 +317,7 @@ class SPG_Migrations {
 			KEY `expires_at`   (`expires_at`)
 		) $charset_collate;";
 
-		$results = array_merge( $results, dbDelta( $sql_qr_transfers ) );
+		$migration_results = array_merge( $migration_results, dbDelta( $sql_qr_transfers ) );
 
 		if ( ! empty( $wpdb->last_error ) ) {
 			$this->log_error(
@@ -323,7 +331,7 @@ class SPG_Migrations {
 		$this->log_info(
 			'SPG database tables created/verified.',
 			array(
-				'dbdelta_results' => $results,
+				'dbdelta_results' => $migration_results,
 			)
 		);
 	}
