@@ -22,20 +22,22 @@ jobs:
           php-version: '7.4'
           coverage: none
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '18'
-          cache: 'npm'
+      # Node.js steps commented out - not needed for this plugin
+      # Assets are pre-compiled and included in the repo
+      # - name: Setup Node.js
+      #   uses: actions/setup-node@v4
+      #   with:
+      #     node-version: '18'
+      #     cache: 'npm'
+      #
+      # - name: Install Node dependencies
+      #   run: npm ci --silent
+      #
+      # - name: Build assets
+      #   run: npm run build
 
       - name: Install Composer dependencies
         run: composer install --no-dev --optimize-autoloader --no-progress
-
-      - name: Install Node dependencies
-        run: npm ci --silent
-
-      - name: Build assets
-        run: npm run build
 
       - name: Stage plugin files
         run: |
