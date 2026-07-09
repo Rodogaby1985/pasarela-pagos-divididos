@@ -26,7 +26,7 @@ class SPG_Mock_Wpdb {
 
 	public function get_row( string $sql, $output = OBJECT ) {
 		foreach ( $this->query_map as $pattern => $result ) {
-			if ( str_contains( $sql, $pattern ) ) {
+			if ( false !== strpos( $sql, $pattern ) ) {
 				return $result ? (array) $result : null;
 			}
 		}
@@ -35,7 +35,7 @@ class SPG_Mock_Wpdb {
 
 	public function get_results( string $sql, $output = OBJECT ): array {
 		foreach ( $this->query_map as $pattern => $result ) {
-			if ( str_contains( $sql, $pattern ) ) {
+			if ( false !== strpos( $sql, $pattern ) ) {
 				return is_array( $result ) ? $result : array();
 			}
 		}
