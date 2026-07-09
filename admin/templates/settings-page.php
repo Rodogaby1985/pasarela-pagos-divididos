@@ -252,7 +252,7 @@ defined( 'ABSPATH' ) || exit;
 			<?php else : ?>
 				<?php foreach ( $rules as $rule ) : ?>
 					<div class="spg-rule-card <?php echo $rule['is_active'] ? 'spg-rule-active' : 'spg-rule-inactive'; ?>"
-						 data-id="<?php echo esc_attr( $rule['id'] ); ?>">
+						data-id="<?php echo esc_attr( $rule['id'] ); ?>">
 						<div class="spg-rule-card-header">
 							<strong class="spg-rule-name"><?php echo esc_html( $rule['rule_name'] ); ?></strong>
 							<span class="spg-rule-status-badge <?php echo $rule['is_active'] ? 'spg-badge-active' : 'spg-badge-inactive'; ?>">
