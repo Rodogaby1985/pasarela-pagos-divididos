@@ -1,8 +1,9 @@
 <?php
 /**
  * Split Distribution Engine.
- * Calculates how payment amounts should be distributed across gateways
- * based on configured split rules (percentages, fixed amounts, etc.).
+ * Calculates how payment amounts should be distributed across gateways.
+ * Each split rule assigns the full shipping amount to the shipping gateway
+ * and the full subtotal amount to the total gateway (100% each).
  *
  * @package SplitPaymentGateway
  */
@@ -19,9 +20,12 @@ class SPG_Split_Distribution_Engine {
 	/**
 	 * Calculate the split distribution for an order.
 	 *
+	 * The shipping gateway receives the full shipping amount and the total
+	 * gateway receives the full order subtotal — no partial percentages.
+	 *
 	 * @param float  $shipping_total  Shipping amount from the order.
 	 * @param float  $order_total     Order subtotal (products only, excluding shipping).
-	 * @param array  $split_rule      Active split rule row (from DB).
+	 * @param array  $split_rule      Active split rule row (from DB). Not used for amounts; kept for API compatibility.
 	 * @param string $currency        ISO-4217 currency code.
 	 * @return array {
 	 *     @type float  $shipping_amount Amount to charge via the shipping gateway.
@@ -31,32 +35,18 @@ class SPG_Split_Distribution_Engine {
 	 * }
 	 */
 	public function calculate( $shipping_total, $order_total, array $split_rule = array(), $currency = 'USD' ) {
-		$shipping_pct = isset( $split_rule['shipping_percentage'] )
-			? (float) $split_rule['shipping_percentage']
-			: 100.0;
-
-		$total_pct = isset( $split_rule['total_percentage'] )
-			? (float) $split_rule['total_percentage']
-			: 100.0;
-
-		// Clamp percentages to 0–100.
-		$shipping_pct = max( 0.0, min( 100.0, $shipping_pct ) );
-		$total_pct    = max( 0.0, min( 100.0, $total_pct ) );
-
-		$shipping_charge = round( $shipping_total * ( $shipping_pct / 100 ), 2 );
-		$total_charge    = round( $order_total * ( $total_pct / 100 ), 2 );
+		$shipping_charge = round( (float) $shipping_total, 2 );
+		$total_charge    = round( (float) $order_total, 2 );
 
 		$result = array(
 			'shipping_amount' => $shipping_charge,
 			'total_amount'    => $total_charge,
 			'currency'        => strtoupper( $currency ),
 			'breakdown'       => array(
-				'shipping_original'   => round( $shipping_total, 2 ),
-				'shipping_percentage' => $shipping_pct,
-				'shipping_charged'    => $shipping_charge,
-				'total_original'      => round( $order_total, 2 ),
-				'total_percentage'    => $total_pct,
-				'total_charged'       => $total_charge,
+				'shipping_original' => $shipping_charge,
+				'shipping_charged'  => $shipping_charge,
+				'total_original'    => $total_charge,
+				'total_charged'     => $total_charge,
 			),
 		);
 
@@ -67,33 +57,18 @@ class SPG_Split_Distribution_Engine {
 
 	/**
 	 * Validate that a set of split rules is internally consistent.
-	 * (Currently checks that percentages are within valid ranges.)
 	 *
 	 * @param array $rules Array of rule rows from the DB.
 	 * @return true|WP_Error
 	 */
 	public function validate_rules( array $rules ) {
 		foreach ( $rules as $rule ) {
-			$shipping_pct = (float) ( $rule['shipping_percentage'] ?? 100 );
-			$total_pct    = (float) ( $rule['total_percentage'] ?? 100 );
-
-			if ( $shipping_pct < 0 || $shipping_pct > 100 ) {
+			if ( empty( $rule['shipping_gateway'] ) || empty( $rule['total_gateway'] ) ) {
 				return new WP_Error(
-					'invalid_shipping_percentage',
+					'missing_gateway',
 					sprintf(
 						/* translators: %s: rule name */
-						__( 'Shipping percentage must be between 0 and 100 for rule "%s".', 'split-payment-gateway' ),
-						$rule['rule_name'] ?? ''
-					)
-				);
-			}
-
-			if ( $total_pct < 0 || $total_pct > 100 ) {
-				return new WP_Error(
-					'invalid_total_percentage',
-					sprintf(
-						/* translators: %s: rule name */
-						__( 'Total percentage must be between 0 and 100 for rule "%s".', 'split-payment-gateway' ),
+						__( 'Both Shipping and Subtotal payment methods must be set for rule "%s".', 'split-payment-gateway' ),
 						$rule['rule_name'] ?? ''
 					)
 				);

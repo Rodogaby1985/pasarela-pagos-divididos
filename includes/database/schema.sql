@@ -1,5 +1,5 @@
 -- ============================================================
--- Split Payment Gateway – MySQL Schema v1.1.0
+-- Split Payment Gateway – MySQL Schema v1.2.0
 -- Compatible with MySQL 5.7+ / MariaDB 10.3+
 -- All tables use the WordPress table prefix (wp_ by default).
 -- ============================================================
@@ -43,18 +43,16 @@ CREATE TABLE IF NOT EXISTS `wp_spg_split_payments` (
 
 -- ── 2. Client Split Rules ───────────────────────────────────
 CREATE TABLE IF NOT EXISTS `wp_spg_client_split_rules` (
-    `id`                  BIGINT(20)   UNSIGNED NOT NULL AUTO_INCREMENT,
-    `client_id`           VARCHAR(50)  NOT NULL,
-    `rule_name`           VARCHAR(100) NOT NULL,
-    `shipping_gateway`    VARCHAR(50)  NOT NULL DEFAULT '',
-    `total_gateway`       VARCHAR(50)  NOT NULL DEFAULT '',
-    `shipping_percentage` DECIMAL(5,2) NOT NULL DEFAULT 100.00 COMMENT '% of shipping charged via shipping_gateway',
-    `total_percentage`    DECIMAL(5,2) NOT NULL DEFAULT 100.00 COMMENT '% of total charged via total_gateway',
-    `conditions`          LONGTEXT     DEFAULT NULL            COMMENT 'JSON: amount ranges, product categories, etc.',
-    `priority`            INT(11)      NOT NULL DEFAULT 10,
-    `is_active`           TINYINT(1)   NOT NULL DEFAULT 1,
-    `created_at`          DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    `updated_at`          DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    `id`               BIGINT(20)   UNSIGNED NOT NULL AUTO_INCREMENT,
+    `client_id`        VARCHAR(50)  NOT NULL,
+    `rule_name`        VARCHAR(100) NOT NULL,
+    `shipping_gateway` VARCHAR(50)  NOT NULL DEFAULT '' COMMENT 'Payment method for shipping amount',
+    `total_gateway`    VARCHAR(50)  NOT NULL DEFAULT '' COMMENT 'Payment method for order subtotal',
+    `conditions`       LONGTEXT     DEFAULT NULL        COMMENT 'JSON: amount ranges, product categories, etc.',
+    `priority`         INT(11)      NOT NULL DEFAULT 10,
+    `is_active`        TINYINT(1)   NOT NULL DEFAULT 1,
+    `created_at`       DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at`       DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (`id`),
     KEY `idx_client`     (`client_id`),
     KEY `idx_active`     (`is_active`)

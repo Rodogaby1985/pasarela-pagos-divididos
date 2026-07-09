@@ -240,51 +240,58 @@ defined( 'ABSPATH' ) || exit;
 	<div id="tab-rules" class="spg-tab-content" style="display:none;">
 		<h2><?php esc_html_e( 'Split Rules', 'split-payment-gateway' ); ?></h2>
 		<p class="description">
-			<?php esc_html_e( 'Define routing rules that determine which gateway is used for each payment type. Rules are evaluated in priority order.', 'split-payment-gateway' ); ?>
+			<?php esc_html_e( 'Define routing rules that determine which payment method is used for shipping and subtotal. Rules are evaluated in priority order (lower number = higher priority).', 'split-payment-gateway' ); ?>
 		</p>
 
-		<table class="wp-list-table widefat fixed striped" id="spg-rules-table">
-			<thead>
-				<tr>
-					<th><?php esc_html_e( 'Rule Name', 'split-payment-gateway' ); ?></th>
-					<th><?php esc_html_e( 'Shipping Gateway', 'split-payment-gateway' ); ?></th>
-					<th><?php esc_html_e( 'Total Gateway', 'split-payment-gateway' ); ?></th>
-					<th><?php esc_html_e( 'Shipping %', 'split-payment-gateway' ); ?></th>
-					<th><?php esc_html_e( 'Total %', 'split-payment-gateway' ); ?></th>
-					<th><?php esc_html_e( 'Priority', 'split-payment-gateway' ); ?></th>
-					<th><?php esc_html_e( 'Active', 'split-payment-gateway' ); ?></th>
-					<th><?php esc_html_e( 'Actions', 'split-payment-gateway' ); ?></th>
-				</tr>
-			</thead>
-			<tbody>
-				<?php if ( empty( $rules ) ) : ?>
-					<tr><td colspan="8"><?php esc_html_e( 'No rules configured yet.', 'split-payment-gateway' ); ?></td></tr>
-				<?php else : ?>
-					<?php foreach ( $rules as $rule ) : ?>
-						<tr data-id="<?php echo esc_attr( $rule['id'] ); ?>">
-							<td><?php echo esc_html( $rule['rule_name'] ); ?></td>
-							<td><?php echo esc_html( $rule['shipping_gateway'] ); ?></td>
-							<td><?php echo esc_html( $rule['total_gateway'] ); ?></td>
-							<td><?php echo esc_html( $rule['shipping_percentage'] ); ?>%</td>
-							<td><?php echo esc_html( $rule['total_percentage'] ); ?>%</td>
-							<td><?php echo esc_html( $rule['priority'] ); ?></td>
-							<td><?php echo $rule['is_active'] ? '✅' : '❌'; ?></td>
-							<td>
-								<button class="button spg-edit-rule" data-id="<?php echo esc_attr( $rule['id'] ); ?>">
-									<?php esc_html_e( 'Edit', 'split-payment-gateway' ); ?>
-								</button>
-								<button class="button spg-delete-rule" data-id="<?php echo esc_attr( $rule['id'] ); ?>">
-									<?php esc_html_e( 'Delete', 'split-payment-gateway' ); ?>
-								</button>
-							</td>
-						</tr>
-					<?php endforeach; ?>
-				<?php endif; ?>
-			</tbody>
-		</table>
+		<div class="spg-rules-grid" id="spg-rules-cards">
+			<?php if ( empty( $rules ) ) : ?>
+				<div class="spg-empty-state">
+					<span class="dashicons dashicons-list-view spg-empty-icon"></span>
+					<p><?php esc_html_e( 'No rules configured yet. Click "Add Rule" to get started.', 'split-payment-gateway' ); ?></p>
+				</div>
+			<?php else : ?>
+				<?php foreach ( $rules as $rule ) : ?>
+					<div class="spg-rule-card <?php echo $rule['is_active'] ? 'spg-rule-active' : 'spg-rule-inactive'; ?>"
+						 data-id="<?php echo esc_attr( $rule['id'] ); ?>">
+						<div class="spg-rule-card-header">
+							<strong class="spg-rule-name"><?php echo esc_html( $rule['rule_name'] ); ?></strong>
+							<span class="spg-rule-status-badge <?php echo $rule['is_active'] ? 'spg-badge-active' : 'spg-badge-inactive'; ?>">
+								<?php echo $rule['is_active'] ? esc_html__( 'Active', 'split-payment-gateway' ) : esc_html__( 'Inactive', 'split-payment-gateway' ); ?>
+							</span>
+						</div>
+						<div class="spg-rule-card-body">
+							<div class="spg-rule-detail">
+								<span class="spg-rule-icon">🚚</span>
+								<span class="spg-rule-label"><?php esc_html_e( 'Shipping:', 'split-payment-gateway' ); ?></span>
+								<span class="spg-rule-value"><?php echo esc_html( $rule['shipping_gateway'] ); ?></span>
+							</div>
+							<div class="spg-rule-detail">
+								<span class="spg-rule-icon">🛒</span>
+								<span class="spg-rule-label"><?php esc_html_e( 'Subtotal:', 'split-payment-gateway' ); ?></span>
+								<span class="spg-rule-value"><?php echo esc_html( $rule['total_gateway'] ); ?></span>
+							</div>
+							<div class="spg-rule-detail">
+								<span class="spg-rule-icon">⬆️</span>
+								<span class="spg-rule-label"><?php esc_html_e( 'Priority:', 'split-payment-gateway' ); ?></span>
+								<span class="spg-rule-value"><?php echo esc_html( $rule['priority'] ); ?></span>
+							</div>
+						</div>
+						<div class="spg-rule-card-actions">
+							<button class="button spg-edit-rule" data-id="<?php echo esc_attr( $rule['id'] ); ?>">
+								<?php esc_html_e( 'Edit', 'split-payment-gateway' ); ?>
+							</button>
+							<button class="button spg-delete-rule spg-btn-danger" data-id="<?php echo esc_attr( $rule['id'] ); ?>">
+								<?php esc_html_e( 'Delete', 'split-payment-gateway' ); ?>
+							</button>
+						</div>
+					</div>
+				<?php endforeach; ?>
+			<?php endif; ?>
+		</div>
 
 		<p>
-			<button class="button button-primary" id="spg-add-rule">
+			<button class="button button-primary spg-btn-add" id="spg-add-rule">
+				<span class="dashicons dashicons-plus-alt2"></span>
 				<?php esc_html_e( 'Add Rule', 'split-payment-gateway' ); ?>
 			</button>
 		</p>
@@ -297,12 +304,12 @@ defined( 'ABSPATH' ) || exit;
 			<table class="form-table">
 				<tr>
 					<th><label for="spg-rule-name"><?php esc_html_e( 'Rule Name', 'split-payment-gateway' ); ?></label></th>
-					<td><input type="text" id="spg-rule-name" name="rule_name" class="regular-text"></td>
+					<td><input type="text" id="spg-rule-name" name="rule_name" class="regular-text" placeholder="<?php esc_attr_e( 'e.g. Default Rule', 'split-payment-gateway' ); ?>"></td>
 				</tr>
 				<tr>
-					<th><label for="spg-rule-shipping-gw"><?php esc_html_e( 'Shipping Gateway', 'split-payment-gateway' ); ?></label></th>
+					<th><label for="spg-rule-shipping-gw">🚚 <?php esc_html_e( 'Shipping Payment Method', 'split-payment-gateway' ); ?></label></th>
 					<td>
-						<select id="spg-rule-shipping-gw" name="shipping_gateway">
+						<select id="spg-rule-shipping-gw" name="shipping_gateway" class="spg-select-modern">
 							<option value=""><?php esc_html_e( '— Select —', 'split-payment-gateway' ); ?></option>
 							<option value="mercadopago">MercadoPago</option>
 							<option value="nave">Nave</option>
@@ -310,12 +317,13 @@ defined( 'ABSPATH' ) || exit;
 							<option value="paypal">PayPal</option>
 							<option value="qr_transfer"><?php esc_html_e( 'QR Transfer', 'split-payment-gateway' ); ?></option>
 						</select>
+						<p class="description"><?php esc_html_e( 'Payment method used to collect the shipping cost.', 'split-payment-gateway' ); ?></p>
 					</td>
 				</tr>
 				<tr>
-					<th><label for="spg-rule-total-gw"><?php esc_html_e( 'Total Gateway', 'split-payment-gateway' ); ?></label></th>
+					<th><label for="spg-rule-total-gw">🛒 <?php esc_html_e( 'Subtotal Payment Method', 'split-payment-gateway' ); ?></label></th>
 					<td>
-						<select id="spg-rule-total-gw" name="total_gateway">
+						<select id="spg-rule-total-gw" name="total_gateway" class="spg-select-modern">
 							<option value=""><?php esc_html_e( '— Select —', 'split-payment-gateway' ); ?></option>
 							<option value="mercadopago">MercadoPago</option>
 							<option value="nave">Nave</option>
@@ -323,23 +331,24 @@ defined( 'ABSPATH' ) || exit;
 							<option value="paypal">PayPal</option>
 							<option value="qr_transfer"><?php esc_html_e( 'QR Transfer', 'split-payment-gateway' ); ?></option>
 						</select>
+						<p class="description"><?php esc_html_e( 'Payment method used to collect the order subtotal (products).', 'split-payment-gateway' ); ?></p>
 					</td>
-				</tr>
-				<tr>
-					<th><label for="spg-rule-ship-pct"><?php esc_html_e( 'Shipping %', 'split-payment-gateway' ); ?></label></th>
-					<td><input type="number" id="spg-rule-ship-pct" name="shipping_percentage" min="0" max="100" step="0.01" value="100" class="small-text"></td>
-				</tr>
-				<tr>
-					<th><label for="spg-rule-total-pct"><?php esc_html_e( 'Total %', 'split-payment-gateway' ); ?></label></th>
-					<td><input type="number" id="spg-rule-total-pct" name="total_percentage" min="0" max="100" step="0.01" value="100" class="small-text"></td>
 				</tr>
 				<tr>
 					<th><label for="spg-rule-priority"><?php esc_html_e( 'Priority', 'split-payment-gateway' ); ?></label></th>
-					<td><input type="number" id="spg-rule-priority" name="priority" min="1" value="10" class="small-text"></td>
+					<td>
+						<input type="number" id="spg-rule-priority" name="priority" min="1" value="10" class="small-text">
+						<p class="description"><?php esc_html_e( 'Lower number = evaluated first. Use 10, 20, 30… to leave room for future rules.', 'split-payment-gateway' ); ?></p>
+					</td>
 				</tr>
 				<tr>
 					<th><?php esc_html_e( 'Active', 'split-payment-gateway' ); ?></th>
-					<td><input type="checkbox" id="spg-rule-active" name="is_active" value="1" checked></td>
+					<td>
+						<label class="spg-toggle-label">
+							<input type="checkbox" id="spg-rule-active" name="is_active" value="1" checked>
+							<span class="spg-toggle-text"><?php esc_html_e( 'Enable this rule', 'split-payment-gateway' ); ?></span>
+						</label>
+					</td>
 				</tr>
 			</table>
 
