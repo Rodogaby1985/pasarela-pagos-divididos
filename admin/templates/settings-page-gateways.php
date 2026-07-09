@@ -35,10 +35,10 @@ defined( 'ABSPATH' ) || exit;
 					<td>
 						<select id="spg-mp-sandbox" name="mp_sandbox" class="spg-select-modern">
 							<option value="yes" <?php selected( $mp_settings['sandbox'], 'yes' ); ?>>
-								<?php esc_html_e( '🧪 Sandbox (Testing)', 'split-payment-gateway' ); ?>
+								<?php esc_html_e( 'Sandbox (Testing)', 'split-payment-gateway' ); ?>
 							</option>
 							<option value="no" <?php selected( $mp_settings['sandbox'], 'no' ); ?>>
-								<?php esc_html_e( '🚀 Production (Live)', 'split-payment-gateway' ); ?>
+								<?php esc_html_e( 'Production (Live)', 'split-payment-gateway' ); ?>
 							</option>
 						</select>
 						<p class="description">
@@ -84,7 +84,7 @@ defined( 'ABSPATH' ) || exit;
 					<th><?php esc_html_e( 'Verify Credentials', 'split-payment-gateway' ); ?></th>
 					<td>
 						<button class="button" id="spg-mp-verify-credentials">
-							<?php esc_html_e( '✓ Verify Credentials', 'split-payment-gateway' ); ?>
+							<?php esc_html_e( 'Verify Credentials', 'split-payment-gateway' ); ?>
 						</button>
 						<span id="spg-mp-credentials-status" class="spg-status-badge" style="display:none;"></span>
 					</td>
@@ -93,7 +93,7 @@ defined( 'ABSPATH' ) || exit;
 					<th><?php esc_html_e( 'Webhook', 'split-payment-gateway' ); ?></th>
 					<td>
 						<button class="button" id="spg-mp-create-webhook">
-							<?php esc_html_e( '✓ Create / Verify Webhook', 'split-payment-gateway' ); ?>
+							<?php esc_html_e( 'Create / Verify Webhook', 'split-payment-gateway' ); ?>
 						</button>
 						<span id="spg-mp-webhook-status" class="spg-status-badge" style="display:none;"></span>
 						<p class="description">
@@ -157,7 +157,7 @@ defined( 'ABSPATH' ) || exit;
 			</table>
 
 			<!-- Subtotal account -->
-			<h3>🛒 <?php esc_html_e( 'Subtotal – Cuenta Tienda', 'split-payment-gateway' ); ?></h3>
+			<h3><span aria-hidden="true">🛒</span> <?php esc_html_e( 'Subtotal – Cuenta Tienda', 'split-payment-gateway' ); ?></h3>
 			<table class="form-table">
 				<tr>
 					<th><label for="spg-qr-alias-subtotal"><?php esc_html_e( 'Alias', 'split-payment-gateway' ); ?></label></th>
@@ -201,7 +201,7 @@ defined( 'ABSPATH' ) || exit;
 			</table>
 
 			<!-- Shipping account -->
-			<h3>🚚 <?php esc_html_e( 'Envío – Cuenta Operador Logístico', 'split-payment-gateway' ); ?></h3>
+			<h3><span aria-hidden="true">🚚</span> <?php esc_html_e( 'Envío – Cuenta Operador Logístico', 'split-payment-gateway' ); ?></h3>
 			<table class="form-table">
 				<tr>
 					<th><label for="spg-qr-alias-shipping"><?php esc_html_e( 'Alias', 'split-payment-gateway' ); ?></label></th>

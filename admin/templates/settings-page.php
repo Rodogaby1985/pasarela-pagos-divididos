@@ -261,17 +261,17 @@ defined( 'ABSPATH' ) || exit;
 						</div>
 						<div class="spg-rule-card-body">
 							<div class="spg-rule-detail">
-								<span class="spg-rule-icon">🚚</span>
+								<span class="spg-rule-icon" aria-hidden="true">🚚</span>
 								<span class="spg-rule-label"><?php esc_html_e( 'Shipping:', 'split-payment-gateway' ); ?></span>
 								<span class="spg-rule-value"><?php echo esc_html( $rule['shipping_gateway'] ); ?></span>
 							</div>
 							<div class="spg-rule-detail">
-								<span class="spg-rule-icon">🛒</span>
+								<span class="spg-rule-icon" aria-hidden="true">🛒</span>
 								<span class="spg-rule-label"><?php esc_html_e( 'Subtotal:', 'split-payment-gateway' ); ?></span>
 								<span class="spg-rule-value"><?php echo esc_html( $rule['total_gateway'] ); ?></span>
 							</div>
 							<div class="spg-rule-detail">
-								<span class="spg-rule-icon">⬆️</span>
+								<span class="spg-rule-icon" aria-hidden="true">⬆️</span>
 								<span class="spg-rule-label"><?php esc_html_e( 'Priority:', 'split-payment-gateway' ); ?></span>
 								<span class="spg-rule-value"><?php echo esc_html( $rule['priority'] ); ?></span>
 							</div>
@@ -307,7 +307,7 @@ defined( 'ABSPATH' ) || exit;
 					<td><input type="text" id="spg-rule-name" name="rule_name" class="regular-text" placeholder="<?php esc_attr_e( 'e.g. Default Rule', 'split-payment-gateway' ); ?>"></td>
 				</tr>
 				<tr>
-					<th><label for="spg-rule-shipping-gw">🚚 <?php esc_html_e( 'Shipping Payment Method', 'split-payment-gateway' ); ?></label></th>
+					<th><label for="spg-rule-shipping-gw"><span aria-hidden="true">🚚</span> <?php esc_html_e( 'Shipping Payment Method', 'split-payment-gateway' ); ?></label></th>
 					<td>
 						<select id="spg-rule-shipping-gw" name="shipping_gateway" class="spg-select-modern">
 							<option value=""><?php esc_html_e( '— Select —', 'split-payment-gateway' ); ?></option>
@@ -321,7 +321,7 @@ defined( 'ABSPATH' ) || exit;
 					</td>
 				</tr>
 				<tr>
-					<th><label for="spg-rule-total-gw">🛒 <?php esc_html_e( 'Subtotal Payment Method', 'split-payment-gateway' ); ?></label></th>
+					<th><label for="spg-rule-total-gw"><span aria-hidden="true">🛒</span> <?php esc_html_e( 'Subtotal Payment Method', 'split-payment-gateway' ); ?></label></th>
 					<td>
 						<select id="spg-rule-total-gw" name="total_gateway" class="spg-select-modern">
 							<option value=""><?php esc_html_e( '— Select —', 'split-payment-gateway' ); ?></option>

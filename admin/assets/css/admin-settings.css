@@ -436,7 +436,7 @@
 }
 
 .spg-toggle input:focus-visible + .spg-toggle-slider {
-    box-shadow: 0 0 0 3px rgba(38, 75, 123, .3);
+    box-shadow: 0 0 0 3px rgba(38, 75, 123, .5);
 }
 
 /* Status badges (gateways page) */

@@ -43,10 +43,8 @@ class SPG_Split_Distribution_Engine {
 			'total_amount'    => $total_charge,
 			'currency'        => strtoupper( $currency ),
 			'breakdown'       => array(
-				'shipping_original' => $shipping_charge,
-				'shipping_charged'  => $shipping_charge,
-				'total_original'    => $total_charge,
-				'total_charged'     => $total_charge,
+				'shipping_charged' => $shipping_charge,
+				'total_charged'    => $total_charge,
 			),
 		);
 

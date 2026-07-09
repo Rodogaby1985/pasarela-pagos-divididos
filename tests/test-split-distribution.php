@@ -83,9 +83,7 @@ class Test_Split_Distribution_Engine extends TestCase {
 	public function test_calculate_breakdown_keys_present() {
 		$result = $this->engine->calculate( 15, 100 );
 		$keys   = array(
-			'shipping_original',
 			'shipping_charged',
-			'total_original',
 			'total_charged',
 		);
 		foreach ( $keys as $key ) {
