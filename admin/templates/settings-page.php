@@ -18,8 +18,8 @@ defined( 'ABSPATH' ) || exit;
 	<!-- Tabs -->
 	<nav class="nav-tab-wrapper spg-tabs" id="spg-settings-tabs">
 		<a href="#tab-gateways" class="nav-tab nav-tab-active"><?php esc_html_e( 'Payment Gateways', 'split-payment-gateway' ); ?></a>
-		<a href="#tab-qr"       class="nav-tab"><?php esc_html_e( 'QR Transfer', 'split-payment-gateway' ); ?></a>
-		<a href="#tab-rules"    class="nav-tab"><?php esc_html_e( 'Split Rules', 'split-payment-gateway' ); ?></a>
+		<a href="#tab-qr" class="nav-tab"><?php esc_html_e( 'QR Transfer', 'split-payment-gateway' ); ?></a>
+		<a href="#tab-rules" class="nav-tab"><?php esc_html_e( 'Split Rules', 'split-payment-gateway' ); ?></a>
 	</nav>
 
 	<!-- Tab: Gateways -->
@@ -145,9 +145,9 @@ defined( 'ABSPATH' ) || exit;
 				<th><label for="spg-qr-alias-subtotal"><?php esc_html_e( 'Subtotal Alias (store)', 'split-payment-gateway' ); ?></label></th>
 				<td>
 					<input type="text" id="spg-qr-alias-subtotal" name="qr_alias_subtotal"
-							class="regular-text"
-							value="<?php echo esc_attr( $qr_settings['qr_alias_subtotal'] ?? '' ); ?>"
-							placeholder="tienda.empresa">
+						class="regular-text"
+						value="<?php echo esc_attr( $qr_settings['qr_alias_subtotal'] ?? '' ); ?>"
+						placeholder="tienda.empresa">
 					<p class="description">
 						<?php esc_html_e( 'CBU, CVU, or alias for the store account. Customers use this to pay for products.', 'split-payment-gateway' ); ?>
 					</p>
@@ -157,9 +157,9 @@ defined( 'ABSPATH' ) || exit;
 				<th><label for="spg-qr-alias-shipping"><?php esc_html_e( 'Shipping Alias (logistics)', 'split-payment-gateway' ); ?></label></th>
 				<td>
 					<input type="text" id="spg-qr-alias-shipping" name="qr_alias_shipping"
-							class="regular-text"
-							value="<?php echo esc_attr( $qr_settings['qr_alias_shipping'] ?? '' ); ?>"
-							placeholder="operador.logistico">
+						class="regular-text"
+						value="<?php echo esc_attr( $qr_settings['qr_alias_shipping'] ?? '' ); ?>"
+						placeholder="operador.logistico">
 					<p class="description">
 						<?php esc_html_e( 'CBU, CVU, or alias for the logistics operator account. Customers use this to pay for shipping.', 'split-payment-gateway' ); ?>
 					</p>
@@ -188,9 +188,9 @@ defined( 'ABSPATH' ) || exit;
 				<th><label for="spg-qr-webhook-secret"><?php esc_html_e( 'Webhook Secret', 'split-payment-gateway' ); ?></label></th>
 				<td>
 					<input type="password" id="spg-qr-webhook-secret" name="qr_webhook_secret"
-							class="regular-text"
-							placeholder="<?php echo esc_attr( $qr_settings['qr_webhook_secret'] ? '••••••••' : '' ); ?>"
-							autocomplete="new-password">
+						class="regular-text"
+						placeholder="<?php echo esc_attr( $qr_settings['qr_webhook_secret'] ? '••••••••' : '' ); ?>"
+						autocomplete="new-password">
 					<p class="description">
 						<?php esc_html_e( 'HMAC-SHA256 secret used to validate QR Transfer webhook notifications. Leave blank to keep existing value.', 'split-payment-gateway' ); ?>
 					</p>
