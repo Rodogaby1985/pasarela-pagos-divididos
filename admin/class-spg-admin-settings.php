@@ -236,16 +236,14 @@ class SPG_Admin_Settings {
 		$client_id = sanitize_key( $post_data['client_id'] ?? '' );
 
 		$data = array(
-			'client_id'           => $client_id,
-			'rule_name'           => sanitize_text_field( $post_data['rule_name'] ?? '' ),
-			'shipping_gateway'    => sanitize_key( $post_data['shipping_gateway'] ?? '' ),
-			'total_gateway'       => sanitize_key( $post_data['total_gateway'] ?? '' ),
-			'shipping_percentage' => min( 100, max( 0, (float) sanitize_text_field( $post_data['shipping_percentage'] ?? '100' ) ) ),
-			'total_percentage'    => min( 100, max( 0, (float) sanitize_text_field( $post_data['total_percentage'] ?? '100' ) ) ),
-			'priority'            => absint( $post_data['priority'] ?? 10 ),
-			'is_active'           => ! empty( $post_data['is_active'] ) ? 1 : 0,
-			'conditions'          => wp_json_encode( array() ),
-			'updated_at'          => current_time( 'mysql', true ),
+			'client_id'        => $client_id,
+			'rule_name'        => sanitize_text_field( $post_data['rule_name'] ?? '' ),
+			'shipping_gateway' => sanitize_key( $post_data['shipping_gateway'] ?? '' ),
+			'total_gateway'    => sanitize_key( $post_data['total_gateway'] ?? '' ),
+			'priority'         => absint( $post_data['priority'] ?? 10 ),
+			'is_active'        => ! empty( $post_data['is_active'] ) ? 1 : 0,
+			'conditions'       => wp_json_encode( array() ),
+			'updated_at'       => current_time( 'mysql', true ),
 		);
 
 		if ( $id ) {

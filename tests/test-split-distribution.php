@@ -46,7 +46,7 @@ class Test_Split_Distribution_Engine extends TestCase {
 
 	// ── calculate() ──────────────────────────────────────────────────────────
 
-	/** Basic 100/100 split (no rule): amounts are returned as-is. */
+	/** Basic split (no rule): amounts are returned as-is (100% to each gateway). */
 	public function test_calculate_full_amounts_by_default() {
 		$result = $this->engine->calculate( 15.00, 100.00 );
 
@@ -55,25 +55,22 @@ class Test_Split_Distribution_Engine extends TestCase {
 		$this->assertSame( 'USD', $result['currency'] );
 	}
 
-	/** 50% split on both shipping and total. */
-	public function test_calculate_fifty_percent_split() {
-		$rule   = array( 'shipping_percentage' => 50, 'total_percentage' => 50 );
+	/** Rule array is ignored for amounts — full shipping and full subtotal are always charged. */
+	public function test_calculate_returns_full_amounts_regardless_of_rule() {
+		$rule   = array( 'shipping_gateway' => 'qr_transfer', 'total_gateway' => 'mercadopago' );
 		$result = $this->engine->calculate( 20.00, 200.00, $rule, 'ARS' );
 
-		$this->assertSame( 10.00, $result['shipping_amount'] );
-		$this->assertSame( 100.00, $result['total_amount'] );
+		$this->assertSame( 20.00, $result['shipping_amount'] );
+		$this->assertSame( 200.00, $result['total_amount'] );
 		$this->assertSame( 'ARS', $result['currency'] );
 	}
 
-	/** Percentage values are clamped between 0 and 100. */
-	public function test_calculate_clamps_percentage_above_100() {
-		$rule   = array( 'shipping_percentage' => 150, 'total_percentage' => -10 );
-		$result = $this->engine->calculate( 30.00, 300.00, $rule );
+	/** Floating-point amounts are rounded to 2 decimal places. */
+	public function test_calculate_rounds_to_two_decimals() {
+		$result = $this->engine->calculate( 10.555, 99.999 );
 
-		// Shipping clamped to 100 → full amount.
-		$this->assertSame( 30.00, $result['shipping_amount'] );
-		// Total clamped to 0 → zero.
-		$this->assertSame( 0.00, $result['total_amount'] );
+		$this->assertSame( 10.56, $result['shipping_amount'] );
+		$this->assertSame( 100.00, $result['total_amount'] );
 	}
 
 	/** Currency code is normalised to uppercase. */
@@ -86,11 +83,7 @@ class Test_Split_Distribution_Engine extends TestCase {
 	public function test_calculate_breakdown_keys_present() {
 		$result = $this->engine->calculate( 15, 100 );
 		$keys   = array(
-			'shipping_original',
-			'shipping_percentage',
 			'shipping_charged',
-			'total_original',
-			'total_percentage',
 			'total_charged',
 		);
 		foreach ( $keys as $key ) {
@@ -100,33 +93,33 @@ class Test_Split_Distribution_Engine extends TestCase {
 
 	// ── validate_rules() ─────────────────────────────────────────────────────
 
-	/** Valid rules pass without error. */
+	/** Valid rules (both gateways set) pass without error. */
 	public function test_validate_rules_passes_for_valid_rules() {
 		$rules = array(
-			array( 'rule_name' => 'Rule A', 'shipping_percentage' => 100, 'total_percentage' => 100 ),
-			array( 'rule_name' => 'Rule B', 'shipping_percentage' => 50,  'total_percentage' => 75  ),
+			array( 'rule_name' => 'Rule A', 'shipping_gateway' => 'qr_transfer',  'total_gateway' => 'mercadopago' ),
+			array( 'rule_name' => 'Rule B', 'shipping_gateway' => 'mercadopago', 'total_gateway' => 'qr_transfer'  ),
 		);
 
 		$result = $this->engine->validate_rules( $rules );
 		$this->assertTrue( $result );
 	}
 
-	/** A shipping percentage > 100 returns WP_Error. */
-	public function test_validate_rules_fails_for_shipping_over_100() {
-		$rules  = array( array( 'rule_name' => 'Bad Rule', 'shipping_percentage' => 110, 'total_percentage' => 100 ) );
+	/** A rule missing the shipping gateway returns WP_Error. */
+	public function test_validate_rules_fails_for_missing_shipping_gateway() {
+		$rules  = array( array( 'rule_name' => 'Bad Rule', 'shipping_gateway' => '', 'total_gateway' => 'mercadopago' ) );
 		$result = $this->engine->validate_rules( $rules );
 
 		$this->assertInstanceOf( WP_Error::class, $result );
-		$this->assertSame( 'invalid_shipping_percentage', $result->code );
+		$this->assertSame( 'missing_gateway', $result->code );
 	}
 
-	/** A total percentage < 0 returns WP_Error. */
-	public function test_validate_rules_fails_for_total_below_0() {
-		$rules  = array( array( 'rule_name' => 'Bad Rule', 'shipping_percentage' => 100, 'total_percentage' => -1 ) );
+	/** A rule missing the total gateway returns WP_Error. */
+	public function test_validate_rules_fails_for_missing_total_gateway() {
+		$rules  = array( array( 'rule_name' => 'Bad Rule', 'shipping_gateway' => 'qr_transfer', 'total_gateway' => '' ) );
 		$result = $this->engine->validate_rules( $rules );
 
 		$this->assertInstanceOf( WP_Error::class, $result );
-		$this->assertSame( 'invalid_total_percentage', $result->code );
+		$this->assertSame( 'missing_gateway', $result->code );
 	}
 
 	// ── calculate_refund_split() ──────────────────────────────────────────────

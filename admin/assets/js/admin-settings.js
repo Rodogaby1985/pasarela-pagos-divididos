@@ -77,6 +77,7 @@
     $('#spg-add-rule').on('click', function () {
         resetRuleForm();
         $('#spg-rule-form').slideDown();
+        $('html, body').animate({ scrollTop: $('#spg-rule-form').offset().top - 60 }, 400);
     });
 
     $('#spg-cancel-rule').on('click', function () {
@@ -84,39 +85,37 @@
     });
 
     $(document).on('click', '.spg-edit-rule', function () {
-        const id = $(this).data('id');
-        const row = $(`#spg-rules-table tr[data-id="${id}"]`);
-        const cells = row.find('td');
+        const id   = $(this).data('id');
+        const card = $(`.spg-rule-card[data-id="${id}"]`);
         $('#spg-rule-id').val(id);
-        $('#spg-rule-name').val(cells.eq(0).text().trim());
-        $('#spg-rule-shipping-gw').val(cells.eq(1).text().trim());
-        $('#spg-rule-total-gw').val(cells.eq(2).text().trim());
-        $('#spg-rule-ship-pct').val(parseFloat(cells.eq(3).text().trim()));
-        $('#spg-rule-total-pct').val(parseFloat(cells.eq(4).text().trim()));
-        $('#spg-rule-priority').val(parseInt(cells.eq(5).text().trim(), 10));
-        $('#spg-rule-active').prop('checked', cells.eq(6).text().trim() === '✅');
+        $('#spg-rule-name').val(card.find('.spg-rule-name').text().trim());
+        // Read values from the detail rows (icon + label + value).
+        const details = card.find('.spg-rule-detail');
+        $('#spg-rule-shipping-gw').val(details.eq(0).find('.spg-rule-value').text().trim());
+        $('#spg-rule-total-gw').val(details.eq(1).find('.spg-rule-value').text().trim());
+        $('#spg-rule-priority').val(parseInt(details.eq(2).find('.spg-rule-value').text().trim(), 10));
+        $('#spg-rule-active').prop('checked', card.hasClass('spg-rule-active'));
         $('#spg-rule-form').slideDown();
+        $('html, body').animate({ scrollTop: $('#spg-rule-form').offset().top - 60 }, 400);
     });
 
     $(document).on('click', '.spg-delete-rule', function () {
         if (!confirm(i18n.confirmDelete)) return;
         const id = $(this).data('id');
         ajaxAction('spg_delete_rule', { id }, function () {
-            $(`#spg-rules-table tr[data-id="${id}"]`).fadeOut(300, function () { $(this).remove(); });
+            $(`.spg-rule-card[data-id="${id}"]`).fadeOut(300, function () { $(this).remove(); });
         });
     });
 
     $('#spg-save-rule').on('click', function () {
         const data = {
-            id:                  $('#spg-rule-id').val(),
-            client_id:           $('input[name="client_id"]').val(),
-            rule_name:           $('#spg-rule-name').val(),
-            shipping_gateway:    $('#spg-rule-shipping-gw').val(),
-            total_gateway:       $('#spg-rule-total-gw').val(),
-            shipping_percentage: $('#spg-rule-ship-pct').val(),
-            total_percentage:    $('#spg-rule-total-pct').val(),
-            priority:            $('#spg-rule-priority').val(),
-            is_active:           $('#spg-rule-active').is(':checked') ? 1 : 0,
+            id:               $('#spg-rule-id').val(),
+            client_id:        $('input[name="client_id"]').val(),
+            rule_name:        $('#spg-rule-name').val(),
+            shipping_gateway: $('#spg-rule-shipping-gw').val(),
+            total_gateway:    $('#spg-rule-total-gw').val(),
+            priority:         $('#spg-rule-priority').val(),
+            is_active:        $('#spg-rule-active').is(':checked') ? 1 : 0,
         };
         ajaxAction('spg_save_rule', data, function () {
             showNotice(i18n.saved, 'success');
@@ -189,8 +188,6 @@
         $('#spg-rule-name').val('');
         $('#spg-rule-shipping-gw').val('');
         $('#spg-rule-total-gw').val('');
-        $('#spg-rule-ship-pct').val(100);
-        $('#spg-rule-total-pct').val(100);
         $('#spg-rule-priority').val(10);
         $('#spg-rule-active').prop('checked', true);
     }

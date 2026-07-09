@@ -21,7 +21,7 @@ defined( 'ABSPATH' ) || exit;
 		<h2>
 			<span class="spg-gateway-icon">💙</span>
 			<?php esc_html_e( 'MercadoPago', 'split-payment-gateway' ); ?>
-			<label class="spg-toggle">
+			<label class="spg-toggle" aria-label="<?php esc_attr_e( 'Enable MercadoPago', 'split-payment-gateway' ); ?>">
 				<input type="checkbox" id="spg-mp-enabled" value="1"
 					<?php checked( $mp_settings['enabled'], 'yes' ); ?>>
 				<span class="spg-toggle-slider"></span>
@@ -33,7 +33,7 @@ defined( 'ABSPATH' ) || exit;
 				<tr>
 					<th><label for="spg-mp-sandbox"><?php esc_html_e( 'Environment', 'split-payment-gateway' ); ?></label></th>
 					<td>
-						<select id="spg-mp-sandbox" name="mp_sandbox">
+						<select id="spg-mp-sandbox" name="mp_sandbox" class="spg-select-modern">
 							<option value="yes" <?php selected( $mp_settings['sandbox'], 'yes' ); ?>>
 								<?php esc_html_e( 'Sandbox (Testing)', 'split-payment-gateway' ); ?>
 							</option>
@@ -128,14 +128,12 @@ defined( 'ABSPATH' ) || exit;
 		</div>
 	</div>
 
-	<hr>
-
 	<!-- ── QR Transfer (Argentina) ─────────────────────────────────────────── -->
 	<div class="spg-gateway-section">
 		<h2>
 			<span class="spg-gateway-icon">📱</span>
 			<?php esc_html_e( 'QR Transfer (Argentina)', 'split-payment-gateway' ); ?>
-			<label class="spg-toggle">
+			<label class="spg-toggle" aria-label="<?php esc_attr_e( 'Enable QR Transfer', 'split-payment-gateway' ); ?>">
 				<input type="checkbox" id="spg-qr-enabled" value="1"
 					<?php checked( $qr_settings['enabled'], 'yes' ); ?>>
 				<span class="spg-toggle-slider"></span>
@@ -159,7 +157,7 @@ defined( 'ABSPATH' ) || exit;
 			</table>
 
 			<!-- Subtotal account -->
-			<h3><?php esc_html_e( '🛒 Subtotal – Cuenta Tienda', 'split-payment-gateway' ); ?></h3>
+			<h3><span aria-hidden="true">🛒</span> <?php esc_html_e( 'Subtotal – Cuenta Tienda', 'split-payment-gateway' ); ?></h3>
 			<table class="form-table">
 				<tr>
 					<th><label for="spg-qr-alias-subtotal"><?php esc_html_e( 'Alias', 'split-payment-gateway' ); ?></label></th>
@@ -203,7 +201,7 @@ defined( 'ABSPATH' ) || exit;
 			</table>
 
 			<!-- Shipping account -->
-			<h3><?php esc_html_e( '🚚 Envío – Cuenta Operador Logístico', 'split-payment-gateway' ); ?></h3>
+			<h3><span aria-hidden="true">🚚</span> <?php esc_html_e( 'Envío – Cuenta Operador Logístico', 'split-payment-gateway' ); ?></h3>
 			<table class="form-table">
 				<tr>
 					<th><label for="spg-qr-alias-shipping"><?php esc_html_e( 'Alias', 'split-payment-gateway' ); ?></label></th>

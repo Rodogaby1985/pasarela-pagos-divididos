@@ -16,7 +16,7 @@ class SPG_Migrations {
 	use SPG_Logger;
 
 	/** Current schema version. */
-	const SCHEMA_VERSION = '1.1.0';
+	const SCHEMA_VERSION = '1.2.0';
 
 	/**
 	 * Run all pending migrations.
@@ -37,6 +37,10 @@ class SPG_Migrations {
 
 		if ( version_compare( $installed_version, '1.1.0', '<' ) ) {
 			$this->upgrade_to_1_1_0();
+		}
+
+		if ( version_compare( $installed_version, '1.2.0', '<' ) ) {
+			$this->upgrade_to_1_2_0();
 		}
 	}
 
@@ -64,6 +68,24 @@ class SPG_Migrations {
 
 		if ( ! in_array( 'qr_alias', $gw_cols, true ) ) {
 			$wpdb->query( "ALTER TABLE `{$gw_table}` ADD COLUMN `qr_alias` VARCHAR(100) DEFAULT NULL COMMENT 'Bank alias / CBU / CVU for QR Transfer'" ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+		}
+	}
+
+	/**
+	 * Upgrade to 1.2.0: remove percentage columns from split_rules (replaced by simple gateway selection).
+	 */
+	private function upgrade_to_1_2_0() {
+		global $wpdb;
+
+		$rules_table = $wpdb->prefix . 'spg_client_split_rules';
+		$cols        = $wpdb->get_col( "DESCRIBE `{$rules_table}`" ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+
+		if ( in_array( 'shipping_percentage', $cols, true ) ) {
+			$wpdb->query( "ALTER TABLE `{$rules_table}` DROP COLUMN `shipping_percentage`" ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+		}
+
+		if ( in_array( 'total_percentage', $cols, true ) ) {
+			$wpdb->query( "ALTER TABLE `{$rules_table}` DROP COLUMN `total_percentage`" ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
 		}
 	}
 
@@ -106,18 +128,16 @@ class SPG_Migrations {
 
 		// ── 2. Client Split Rules ──────────────────────────────────────────────
 		$sql_split_rules = "CREATE TABLE IF NOT EXISTS `{$wpdb->prefix}spg_client_split_rules` (
-			`id`                  BIGINT(20)  UNSIGNED NOT NULL AUTO_INCREMENT,
-			`client_id`           VARCHAR(50) NOT NULL,
-			`rule_name`           VARCHAR(100) NOT NULL,
-			`shipping_gateway`    VARCHAR(50)  NOT NULL DEFAULT '',
-			`total_gateway`       VARCHAR(50)  NOT NULL DEFAULT '',
-			`shipping_percentage` DECIMAL(5,2) NOT NULL DEFAULT 100.00,
-			`total_percentage`    DECIMAL(5,2) NOT NULL DEFAULT 100.00,
-			`conditions`          LONGTEXT     DEFAULT NULL,
-			`priority`            INT(11)      NOT NULL DEFAULT 10,
-			`is_active`           TINYINT(1)   NOT NULL DEFAULT 1,
-			`created_at`          DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
-			`updated_at`          DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+			`id`               BIGINT(20)  UNSIGNED NOT NULL AUTO_INCREMENT,
+			`client_id`        VARCHAR(50) NOT NULL,
+			`rule_name`        VARCHAR(100) NOT NULL,
+			`shipping_gateway` VARCHAR(50)  NOT NULL DEFAULT '',
+			`total_gateway`    VARCHAR(50)  NOT NULL DEFAULT '',
+			`conditions`       LONGTEXT     DEFAULT NULL,
+			`priority`         INT(11)      NOT NULL DEFAULT 10,
+			`is_active`        TINYINT(1)   NOT NULL DEFAULT 1,
+			`created_at`       DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+			`updated_at`       DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 			PRIMARY KEY  (`id`),
 			KEY `client_id` (`client_id`),
 			KEY `is_active`  (`is_active`)
