@@ -3,8 +3,8 @@
 /**
  * Plugin Name:       Split Payment Gateway for WooCommerce
  * Plugin URI:        https://github.com/Rodogaby1985/pasarela-pagos-divididos
- * Description:       Pasarela de pagos agregadora multi-procesador con segregación fiscal de envíos y totales. Conecta múltiples procesadores de pago (MercadoPago, Nave, Stripe, PayPal, etc.) permitiendo rutas de pago independientes para el envío y el total de la compra.
- * Version:           1.1.0
+ * Description:       Pasarela de pagos agregadora multi-procesador con segregación fiscal de envíos y totales. Conecta múltiples procesadores de pago (MercadoPago, Nave, Stripe, PayPal, etc.) p[...]
+ * Version:           1.2.0
  * Requires at least: 5.0
  * Requires PHP:      7.4
  * Author:            Split Payment Gateway
@@ -22,7 +22,7 @@ defined( 'ABSPATH' ) || exit;
 
 // phpcs:disable Universal.Files.SeparateFunctionsFromOO
 // Plugin constants.
-define( 'SPG_VERSION', '1.1.0' );
+define( 'SPG_VERSION', '1.2.0' );
 define( 'SPG_PLUGIN_FILE', __FILE__ );
 define( 'SPG_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'SPG_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
