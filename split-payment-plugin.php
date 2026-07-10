@@ -55,8 +55,6 @@ function spg_woocommerce_missing_notice() {
  */
 final class Split_Payment_Gateway_Plugin {
 
-	use SPG_Logger;
-
 	/**
 	 * Singleton plugin instance.
 	 *
@@ -343,6 +341,38 @@ final class Split_Payment_Gateway_Plugin {
 				true
 			);
 		}
+	}
+
+	// ── Logger methods (delegated to SPG_Logger trait) ───────────────────────
+
+	/**
+	 * Log info message.
+	 *
+	 * @param string $message Log message.
+	 * @param array  $context Optional context array.
+	 */
+	private function log_info( $message, $context = array() ) {
+		error_log( wp_json_encode( array( 'level' => 'info', 'message' => $message, 'context' => $context ) ) );
+	}
+
+	/**
+	 * Log warning message.
+	 *
+	 * @param string $message Log message.
+	 * @param array  $context Optional context array.
+	 */
+	private function log_warning( $message, $context = array() ) {
+		error_log( wp_json_encode( array( 'level' => 'warning', 'message' => $message, 'context' => $context ) ) );
+	}
+
+	/**
+	 * Log error message.
+	 *
+	 * @param string $message Log message.
+	 * @param array  $context Optional context array.
+	 */
+	private function log_error( $message, $context = array() ) {
+		error_log( wp_json_encode( array( 'level' => 'error', 'message' => $message, 'context' => $context ) ) );
 	}
 }
 
