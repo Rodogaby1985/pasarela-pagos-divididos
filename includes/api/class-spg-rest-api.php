@@ -14,7 +14,7 @@
  */
 
 defined( 'ABSPATH' ) || exit;
-// phpcs:disable Universal.Operators.DisallowShortTernary.Found,WordPress.WP.Capabilities.Unknown,Squiz.PHP.CommentedOutCode.Found,Generic.CodeAnalysis.EmptyStatement.DetectedCatch,WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
+// phpcs:disable Universal.Operators.DisallowShortTernary.Found,WordPress.WP.Capabilities.Unknown,Squiz.PHP.CommentedOutCode.Found,Generic.CodeAnalysis.EmptyStatement.DetectedCatch,WordPress.DB.Di[...]
 
 /**
  * REST API routes for split payment operations.
@@ -106,7 +106,7 @@ class SPG_Rest_Api {
 		// QR Transfer: webhook to confirm a payment externally.
 		register_rest_route(
 			self::NAMESPACE,
-			'/webhooks/qr-transfer',
+			'/webhooks/qr_transfer',
 			array(
 				'methods'             => WP_REST_Server::CREATABLE,
 				'callback'            => array( $instance, 'handle_qr_webhook' ),
@@ -197,7 +197,7 @@ class SPG_Rest_Api {
 		);
 	}
 
-	// ── Handlers ──────────────────────────────────────────────────────────────
+	// ── Handlers ──────────────────────────────────────────────────────────�[...]
 
 	/**
 	 * POST /spg/v1/split-payment/initiate
@@ -338,11 +338,11 @@ class SPG_Rest_Api {
 	}
 
 	/**
-	 * POST /spg/v1/webhooks/qr-transfer
+	 * POST /spg/v1/webhooks/qr_transfer
 	 *
 	 * Dedicated webhook for QR Transfer payment confirmations.
 	 * This is a convenience alias; the generic /webhooks/{gateway} route
-	 * also handles 'qr-transfer' (slug 'qr_transfer').
+	 * also handles 'qr_transfer'.
 	 *
 	 * Expected JSON body: { transaction_id, order_ref, amount, status, event }
 	 *
@@ -600,7 +600,7 @@ class SPG_Rest_Api {
 		return new WP_Error( 'spg_forbidden', __( 'Admin access required.', 'split-payment-gateway' ), array( 'status' => 403 ) );
 	}
 
-	// ── Private helpers ────────────────────────────────────────────────────────
+	// ── Private helpers ───────────────────���────────────────────────────────────
 
 	/**
 	 * Decrypt a stored (AES-256) access token.
