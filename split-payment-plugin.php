@@ -258,20 +258,50 @@ final class Split_Payment_Gateway_Plugin {
 			true
 		);
 
-		// Collect registered gateways to pass to the frontend.
+		// Collect only active/configured gateways from the database.
 		$available_methods = array();
-		try {
-			$factory  = SPG_Gateway_Adapter_Factory::instance();
-			$gateways = $factory->get_registered_gateways();
-			foreach ( $gateways as $slug ) {
+		global $wpdb;
+		$active_gateways = $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT DISTINCT gateway_name FROM `{$wpdb->prefix}spg_client_gateways` WHERE is_active = %d",
+				1
+			)
+		);
+		foreach ( $active_gateways as $gw ) {
+			$available_methods[] = array(
+				'slug'  => $gw->gateway_name,
+				'label' => $this->get_gateway_label( $gw->gateway_name ),
+				'type'  => ( 'qr_transfer' === $gw->gateway_name ) ? 'qr' : 'gateway',
+			);
+		}
+
+		// Also include QR Transfer if it is configured (stored in wp_options, not spg_client_gateways).
+		if ( get_option( 'spg_qr_alias_subtotal', '' ) || get_option( 'spg_qr_alias_shipping', '' ) ) {
+			$qr_already_added = false;
+			foreach ( $available_methods as $m ) {
+				if ( 'qr_transfer' === $m['slug'] ) {
+					$qr_already_added = true;
+					break;
+				}
+			}
+			if ( ! $qr_already_added ) {
 				$available_methods[] = array(
-					'slug'  => $slug,
-					'label' => $this->get_gateway_label( $slug ),
-					'type'  => ( 'qr_transfer' === $slug ) ? 'qr' : 'gateway',
+					'slug'  => 'qr_transfer',
+					'label' => $this->get_gateway_label( 'qr_transfer' ),
+					'type'  => 'qr',
 				);
 			}
-		} catch ( Exception $e ) {
-			$available_methods = array();
+		}
+
+		// Resolve the current order to supply the thank-you page URL.
+		$order_received_url = '';
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		$order_id_param = isset( $_GET['spg_order_id'] ) ? absint( $_GET['spg_order_id'] ) : 0;
+		if ( $order_id_param ) {
+			$current_order = wc_get_order( $order_id_param );
+			if ( $current_order ) {
+				$order_received_url = $current_order->get_checkout_order_received_url();
+			}
 		}
 
 		wp_localize_script(
@@ -282,7 +312,7 @@ final class Split_Payment_Gateway_Plugin {
 				'restUrl'          => rest_url( 'spg/v1/' ),
 				'nonce'            => wp_create_nonce( 'wp_rest' ),
 				'currency'         => get_woocommerce_currency(),
-				'orderReceivedUrl' => '', // Populated per-order on the checkout page.
+				'orderReceivedUrl' => $order_received_url,
 				'availableMethods' => $available_methods,
 				'qrExpirySeconds'  => SPG_QR_Transfer_Adapter::EXPIRY_SECONDS,
 				'i18n'             => array(

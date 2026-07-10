@@ -156,27 +156,49 @@ class SPG_Split_Payment_Service {
 			)
 		);
 
-		// Persist record.
+		// Persist record using INSERT … ON DUPLICATE KEY UPDATE to be safe against
+		// concurrent calls (e.g. process_payment + REST API for the same order).
 		$session_id = bin2hex( random_bytes( 16 ) );
+		$table      = $this->db->prefix . 'spg_split_payments';
+		$now        = current_time( 'mysql', true );
 
-		$this->db->insert(
-			$this->db->prefix . 'spg_split_payments',
-			array(
-				'order_id'             => $order_id,
-				'client_id'            => sanitize_text_field( $client_id ),
-				'shipping_gateway'     => $shipping_gw['name'],
-				'shipping_method_type' => $shipping_method_type,
-				'total_gateway'        => $total_gw['name'],
-				'total_method_type'    => $total_method_type,
-				'shipping_tx_id'       => $shipping_result['transaction_id'],
-				'total_tx_id'          => $total_result['transaction_id'],
-				'shipping_amount'      => $shipping_amount,
-				'total_amount'         => $order_subtotal,
-				'currency'             => $currency,
-				'status'               => 'initiated',
-				'metadata'             => wp_json_encode( array( 'session_id' => $session_id ) ),
-				'created_at'           => current_time( 'mysql', true ),
-				'updated_at'           => current_time( 'mysql', true ),
+		$this->db->query(
+			$this->db->prepare(
+				"INSERT INTO `{$table}`
+				 (order_id, client_id, shipping_gateway, shipping_method_type,
+				  total_gateway, total_method_type, shipping_tx_id, total_tx_id,
+				  shipping_amount, total_amount, currency, status, metadata,
+				  created_at, updated_at)
+				 VALUES (%d, %s, %s, %s, %s, %s, %s, %s, %f, %f, %s, %s, %s, %s, %s)
+				 ON DUPLICATE KEY UPDATE
+				  client_id            = VALUES(client_id),
+				  shipping_gateway     = VALUES(shipping_gateway),
+				  shipping_method_type = VALUES(shipping_method_type),
+				  total_gateway        = VALUES(total_gateway),
+				  total_method_type    = VALUES(total_method_type),
+				  shipping_tx_id       = VALUES(shipping_tx_id),
+				  total_tx_id          = VALUES(total_tx_id),
+				  shipping_amount      = VALUES(shipping_amount),
+				  total_amount         = VALUES(total_amount),
+				  currency             = VALUES(currency),
+				  status               = VALUES(status),
+				  metadata             = VALUES(metadata),
+				  updated_at           = VALUES(updated_at)",
+				$order_id,
+				sanitize_text_field( $client_id ),
+				$shipping_gw['name'],
+				$shipping_method_type,
+				$total_gw['name'],
+				$total_method_type,
+				$shipping_result['transaction_id'],
+				$total_result['transaction_id'],
+				$shipping_amount,
+				$order_subtotal,
+				$currency,
+				'initiated',
+				wp_json_encode( array( 'session_id' => $session_id ) ),
+				$now,
+				$now
 			)
 		);
 

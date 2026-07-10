@@ -14,7 +14,7 @@
  */
 
 defined( 'ABSPATH' ) || exit;
-// phpcs:disable Universal.Operators.DisallowShortTernary.Found,WordPress.WP.Capabilities.Unknown,Squiz.PHP.CommentedOutCode.Found,Generic.CodeAnalysis.EmptyStatement.DetectedCatch,WordPress.DB.Di[...]
+// phpcs:disable Universal.Operators.DisallowShortTernary.Found,WordPress.WP.Capabilities.Unknown,Squiz.PHP.CommentedOutCode.Found,Generic.CodeAnalysis.EmptyStatement.DetectedCatch,WordPress.DB.DirectDatabaseQuery
 
 /**
  * REST API routes for split payment operations.
@@ -454,23 +454,29 @@ class SPG_Rest_Api {
 			);
 		}
 
-		$rows = $wpdb->get_results(
-			$wpdb->prepare(
-				"SELECT sp.*, tr.tx_type, tr.gateway, tr.tx_id, tr.amount,
-				        tr.gateway_status, tr.fiscal_document_id, tr.reconciled
-				 FROM `{$wpdb->prefix}spg_split_payments` sp
-				 LEFT JOIN `{$wpdb->prefix}spg_transaction_reconciliation` tr
-				       ON sp.id = tr.split_payment_id
-				 WHERE sp.client_id = %s
-				   AND DATE(sp.created_at) BETWEEN %s AND %s
-				 ORDER BY sp.created_at DESC
-				 LIMIT 500",
-				$client_id,
-				$from,
-				$to
-			),
-			ARRAY_A
-		);
+		$cache_key = 'spg_fiscal_' . md5( $client_id . '_' . $from . '_' . $to );
+		$rows      = wp_cache_get( $cache_key, 'spg_fiscal_report' );
+
+		if ( false === $rows ) {
+			$rows = $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
+				$wpdb->prepare(
+					"SELECT sp.*, tr.tx_type, tr.gateway, tr.tx_id, tr.amount,
+					        tr.gateway_status, tr.fiscal_document_id, tr.reconciled
+					 FROM `{$wpdb->prefix}spg_split_payments` sp
+					 LEFT JOIN `{$wpdb->prefix}spg_transaction_reconciliation` tr
+					       ON sp.id = tr.split_payment_id
+					 WHERE sp.client_id = %s
+					   AND DATE(sp.created_at) BETWEEN %s AND %s
+					 ORDER BY sp.created_at DESC
+					 LIMIT 500",
+					$client_id,
+					$from,
+					$to
+				),
+				ARRAY_A
+			);
+			wp_cache_set( $cache_key, $rows, 'spg_fiscal_report', 5 * MINUTE_IN_SECONDS );
+		}
 
 		return rest_ensure_response(
 			array(
