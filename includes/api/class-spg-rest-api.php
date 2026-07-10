@@ -14,7 +14,7 @@
  */
 
 defined( 'ABSPATH' ) || exit;
-// phpcs:disable Universal.Operators.DisallowShortTernary.Found,WordPress.WP.Capabilities.Unknown,Squiz.PHP.CommentedOutCode.Found,Generic.CodeAnalysis.EmptyStatement.DetectedCatch,WordPress.DB.Di[...]
+// phpcs:disable Universal.Operators.DisallowShortTernary.Found,WordPress.WP.Capabilities.Unknown,Squiz.PHP.CommentedOutCode.Found,Generic.CodeAnalysis.EmptyStatement.DetectedCatch,WordPress.DB.DirectDatabaseQuery
 
 /**
  * REST API routes for split payment operations.
