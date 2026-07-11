@@ -359,11 +359,13 @@ class SPG_Rest_Api {
 				$qr_record = $adapter->get_qr_record( $existing_hash );
 
 				if ( $qr_record && 'pending' === $qr_record['status'] && strtotime( $qr_record['expires_at'] ) > time() ) {
-					// Return existing valid QR.
+					$qr_data = json_decode( $qr_record['qr_payload'], true );
+					// Return existing valid QR with server-generated image.
 					return rest_ensure_response(
 						array(
 							'success'    => true,
-							'qr_data'    => json_decode( $qr_record['qr_payload'], true ),
+							'qr_data'    => $qr_data,
+							'qr_image'   => $qr_data ? $this->generate_qr_image( $qr_data ) : '',
 							'expires_at' => strtotime( $qr_record['expires_at'] ),
 							'status'     => 'pending',
 						)
@@ -394,6 +396,7 @@ class SPG_Rest_Api {
 				array(
 					'success'    => true,
 					'qr_data'    => $qr_data,
+					'qr_image'   => $qr_data ? $this->generate_qr_image( $qr_data ) : '',
 					'expires_at' => $expires_at,
 					'status'     => 'pending',
 				)
@@ -725,6 +728,14 @@ class SPG_Rest_Api {
 				)
 			);
 			// Cache the failure briefly so we don't hammer the service.
+			set_transient( $cache_key, '', 60 );
+			return '';
+		}
+
+		// Validate the response is actually a PNG image before encoding.
+		$content_type = wp_remote_retrieve_header( $response, 'content-type' );
+		if ( false === strpos( $content_type, 'image/png' ) ) {
+			$this->log_warning( 'QR image response had unexpected content-type.', array( 'content_type' => $content_type ) );
 			set_transient( $cache_key, '', 60 );
 			return '';
 		}

@@ -15,10 +15,14 @@
 
 defined( 'ABSPATH' ) || exit;
 
-// phpcs:disable WordPress.Security.EscapeOutput.OutputNotEscaped,WordPress.Security.NonceVerification.Recommended
+// phpcs:disable WordPress.Security.EscapeOutput.OutputNotEscaped
 
+// Both parameters are read-only display values; actual security is enforced by
+// validating the session_id against a stored transient (see get_transient below).
+// phpcs:disable WordPress.Security.NonceVerification.Recommended
 $order_id   = isset( $_GET['spg_order_id'] ) ? absint( $_GET['spg_order_id'] ) : 0;
 $session_id = isset( $_GET['spg_session_id'] ) ? sanitize_key( $_GET['spg_session_id'] ) : '';
+// phpcs:enable WordPress.Security.NonceVerification.Recommended
 
 // Validate session.
 $session = $session_id ? get_transient( 'spg_payment_session_' . $session_id ) : false;
@@ -282,7 +286,7 @@ $spg_page_data = array(
 </div><!-- /#spg-payment-page -->
 
 <script>
-window.spgPageData = <?php echo wp_json_encode( $spg_page_data ); ?>;
+window.spgPageData = <?php echo wp_json_encode( $spg_page_data, JSON_HEX_TAG ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- wp_json_encode with JSON_HEX_TAG escapes <> sequences, safe for inline script. ?>;
 </script>
 <?php wp_footer(); ?>
 </body>
