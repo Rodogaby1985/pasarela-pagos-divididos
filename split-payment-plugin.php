@@ -154,6 +154,11 @@ final class Split_Payment_Gateway_Plugin {
 
 		// HPOS (High-Performance Order Storage) compatibility declaration.
 		add_action( 'before_woocommerce_init', array( $this, 'declare_hpos_compatibility' ) );
+
+		// Full-page payment UI: rewrite rule + template handler.
+		add_action( 'init', array( $this, 'add_payment_page_rewrite' ) );
+		add_filter( 'query_vars', array( $this, 'add_payment_page_query_var' ) );
+		add_action( 'template_redirect', array( $this, 'serve_payment_page' ) );
 	}
 
 	/**
@@ -161,6 +166,8 @@ final class Split_Payment_Gateway_Plugin {
 	 */
 	public function activate() {
 		SPG_Migrations::run();
+		// Register rewrite rule before flushing.
+		$this->add_payment_page_rewrite();
 		flush_rewrite_rules();
 	}
 
@@ -204,6 +211,61 @@ final class Split_Payment_Gateway_Plugin {
 		flush_rewrite_rules();
 	}
 
+	// ── Full-page payment UI ──────────────────────────────────────────────────
+
+	/**
+	 * Register the /spg-payment-page/ rewrite rule.
+	 * Called on 'init' so it runs on every request.
+	 */
+	public function add_payment_page_rewrite() {
+		add_rewrite_rule( '^spg-payment-page/?$', 'index.php?spg_payment_page=1', 'top' );
+	}
+
+	/**
+	 * Register the spg_payment_page query variable with WordPress.
+	 *
+	 * @param array $vars Existing public query variables.
+	 * @return array
+	 */
+	public function add_payment_page_query_var( $vars ) {
+		$vars[] = 'spg_payment_page';
+		return $vars;
+	}
+
+	/**
+	 * Serve the full-page payment template when /spg-payment-page/ is requested.
+	 * Hooked on 'template_redirect'.
+	 */
+	public function serve_payment_page() {
+		if ( ! get_query_var( 'spg_payment_page' ) ) {
+			return;
+		}
+
+		require_once SPG_PLUGIN_DIR . 'includes/templates/split-payment-page.php';
+		exit;
+	}
+
+	/**
+	 * Enqueue assets needed exclusively on the full-page payment UI.
+	 * Called via wp_enqueue_scripts when serving /spg-payment-page/.
+	 */
+	public function enqueue_payment_page_assets() {
+		wp_enqueue_style(
+			'spg-payment-page-css',
+			SPG_PLUGIN_URL . 'assets/css/split-payment-page.css',
+			array(),
+			SPG_VERSION
+		);
+
+		wp_enqueue_script(
+			'spg-payment-page-js',
+			SPG_PLUGIN_URL . 'assets/js/split-payment-page.js',
+			array(),
+			SPG_VERSION,
+			true
+		);
+	}
+
 	/**
 	 * Register the custom payment gateway with WooCommerce.
 	 *
@@ -227,9 +289,15 @@ final class Split_Payment_Gateway_Plugin {
 	}
 
 	/**
-	 * Enqueue frontend JS/CSS on checkout page.
+	 * Enqueue frontend JS/CSS on checkout page and the full-page payment UI.
 	 */
 	public function enqueue_frontend_assets() {
+		// Full-page payment UI (/spg-payment-page/).
+		if ( get_query_var( 'spg_payment_page' ) ) {
+			$this->enqueue_payment_page_assets();
+			return;
+		}
+
 		if ( ! is_checkout() ) {
 			return;
 		}

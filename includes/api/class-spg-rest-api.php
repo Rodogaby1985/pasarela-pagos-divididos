@@ -195,6 +195,74 @@ class SPG_Rest_Api {
 				),
 			)
 		);
+
+		// ── Payment-session endpoints (new full-page flow) ──────────────────────
+		// These use a session_id (128-bit random token) as authentication so they
+		// work for both logged-in and guest customers.
+
+		// Initiate the payment session: resolves gateways, creates DB record, returns QR.
+		register_rest_route(
+			self::NAMESPACE,
+			'/payment-session/initiate',
+			array(
+				'methods'             => WP_REST_Server::CREATABLE,
+				'callback'            => array( $instance, 'initiate_payment_session' ),
+				'permission_callback' => '__return_true',
+				'args'                => array(
+					'session_id'      => array(
+						'required'          => true,
+						'type'              => 'string',
+						'sanitize_callback' => 'sanitize_key',
+					),
+					'shipping_method' => array(
+						'required'          => false,
+						'type'              => 'string',
+						'sanitize_callback' => 'sanitize_key',
+					),
+					'total_method'    => array(
+						'required'          => false,
+						'type'              => 'string',
+						'sanitize_callback' => 'sanitize_key',
+					),
+				),
+			)
+		);
+
+		// Poll the payment status of a session.
+		register_rest_route(
+			self::NAMESPACE,
+			'/payment-session/status',
+			array(
+				'methods'             => WP_REST_Server::READABLE,
+				'callback'            => array( $instance, 'get_payment_session_status' ),
+				'permission_callback' => '__return_true',
+				'args'                => array(
+					'session_id' => array(
+						'required'          => true,
+						'type'              => 'string',
+						'sanitize_callback' => 'sanitize_key',
+					),
+				),
+			)
+		);
+
+		// Complete the session: mark the WooCommerce order as paid.
+		register_rest_route(
+			self::NAMESPACE,
+			'/payment-session/complete',
+			array(
+				'methods'             => WP_REST_Server::CREATABLE,
+				'callback'            => array( $instance, 'complete_payment_session' ),
+				'permission_callback' => '__return_true',
+				'args'                => array(
+					'session_id' => array(
+						'required'          => true,
+						'type'              => 'string',
+						'sanitize_callback' => 'sanitize_key',
+					),
+				),
+			)
+		);
 	}
 
 	// ── Handlers ──────────────────────────────────────────────────────────�[...]
@@ -419,6 +487,253 @@ class SPG_Rest_Api {
 			),
 			$status_code
 		);
+	}
+
+	// ── Payment-session handlers (new full-page flow) ─────────────────────────
+
+	/**
+	 * POST /spg/v1/payment-session/initiate
+	 *
+	 * Resolves gateways, initiates both payments, returns QR images / gateway
+	 * redirect URLs.  Authentication is via the session_id token (128-bit random
+	 * value created in process_payment() and stored in a transient).
+	 *
+	 * @param WP_REST_Request $request Incoming request.
+	 * @return WP_REST_Response|WP_Error
+	 */
+	public function initiate_payment_session( WP_REST_Request $request ) {
+		$session_id = $request->get_param( 'session_id' );
+		$session    = get_transient( 'spg_payment_session_' . $session_id );
+
+		if ( ! $session ) {
+			return new WP_Error(
+				'spg_invalid_session',
+				__( 'Invalid or expired payment session.', 'split-payment-gateway' ),
+				array( 'status' => 404 )
+			);
+		}
+
+		$order_id = absint( $session['order_id'] );
+		$order    = wc_get_order( $order_id );
+
+		if ( ! $order ) {
+			return new WP_Error(
+				'spg_invalid_order',
+				__( 'Order not found.', 'split-payment-gateway' ),
+				array( 'status' => 404 )
+			);
+		}
+
+		$method_choices = array();
+		if ( $request->get_param( 'shipping_method' ) ) {
+			$method_choices['shipping_method'] = $request->get_param( 'shipping_method' );
+		}
+		if ( $request->get_param( 'total_method' ) ) {
+			$method_choices['total_method'] = $request->get_param( 'total_method' );
+		}
+
+		try {
+			$service   = $this->get_service();
+			$client_id = sanitize_text_field( $session['client_id'] );
+			$result    = $service->initiate( $order, $client_id, $method_choices );
+
+			// Generate server-side QR images when applicable.
+			if ( 'qr_transfer' === $result['shipping_method_type'] && ! empty( $result['shipping_qr_data'] ) ) {
+				$result['shipping_qr_image'] = $this->generate_qr_image( $result['shipping_qr_data'] );
+			}
+			if ( 'qr_transfer' === $result['total_method_type'] && ! empty( $result['total_qr_data'] ) ) {
+				$result['total_qr_image'] = $this->generate_qr_image( $result['total_qr_data'] );
+			}
+
+			// Include amounts in the result so the JS can display them.
+			$result['shipping_amount'] = $order->get_shipping_total();
+			$result['total_amount']    = $order->get_subtotal();
+
+			return rest_ensure_response(
+				array(
+					'success' => true,
+					'data'    => $result,
+				)
+			);
+		} catch ( Exception $e ) {
+			$this->log_error( 'Payment session initiate error.', array( 'error' => $e->getMessage() ) );
+			return new WP_Error( 'spg_initiate_error', $e->getMessage(), array( 'status' => 500 ) );
+		}
+	}
+
+	/**
+	 * GET /spg/v1/payment-session/status
+	 *
+	 * Polls the payment status of the session.  Returns whether each section
+	 * (shipping, total) is paid and whether both are complete.
+	 *
+	 * @param WP_REST_Request $request Incoming request.
+	 * @return WP_REST_Response|WP_Error
+	 */
+	public function get_payment_session_status( WP_REST_Request $request ) {
+		$session_id = $request->get_param( 'session_id' );
+		$session    = get_transient( 'spg_payment_session_' . $session_id );
+
+		if ( ! $session ) {
+			return new WP_Error(
+				'spg_invalid_session',
+				__( 'Invalid or expired payment session.', 'split-payment-gateway' ),
+				array( 'status' => 404 )
+			);
+		}
+
+		$order_id = absint( $session['order_id'] );
+
+		try {
+			$service    = $this->get_service();
+			$validation = $service->validate( $order_id );
+
+			return rest_ensure_response(
+				array(
+					'success' => true,
+					'data'    => $validation,
+				)
+			);
+		} catch ( Exception $e ) {
+			// Payment not initiated yet (no DB record) – return pending status.
+			return rest_ensure_response(
+				array(
+					'success' => true,
+					'data'    => array(
+						'shipping_paid' => false,
+						'total_paid'    => false,
+						'is_complete'   => false,
+						'status'        => 'pending',
+					),
+				)
+			);
+		}
+	}
+
+	/**
+	 * POST /spg/v1/payment-session/complete
+	 *
+	 * Marks the WooCommerce order as payment_complete() after verifying that
+	 * both the shipping and total sections have been paid.
+	 *
+	 * @param WP_REST_Request $request Incoming request.
+	 * @return WP_REST_Response|WP_Error
+	 */
+	public function complete_payment_session( WP_REST_Request $request ) {
+		$session_id = $request->get_param( 'session_id' );
+		$session    = get_transient( 'spg_payment_session_' . $session_id );
+
+		if ( ! $session ) {
+			return new WP_Error(
+				'spg_invalid_session',
+				__( 'Invalid or expired payment session.', 'split-payment-gateway' ),
+				array( 'status' => 404 )
+			);
+		}
+
+		$order_id = absint( $session['order_id'] );
+		$order    = wc_get_order( $order_id );
+
+		if ( ! $order ) {
+			return new WP_Error(
+				'spg_invalid_order',
+				__( 'Order not found.', 'split-payment-gateway' ),
+				array( 'status' => 404 )
+			);
+		}
+
+		// Verify that both payments are actually confirmed.
+		try {
+			$service    = $this->get_service();
+			$validation = $service->validate( $order_id );
+
+			if ( ! $validation['is_complete'] ) {
+				return new WP_Error(
+					'spg_not_complete',
+					__( 'Both payments must be completed before finalizing the order.', 'split-payment-gateway' ),
+					array( 'status' => 400 )
+				);
+			}
+		} catch ( Exception $e ) {
+			return new WP_Error(
+				'spg_validate_error',
+				__( 'Could not verify payment status.', 'split-payment-gateway' ),
+				array( 'status' => 500 )
+			);
+		}
+
+		// Mark the order as paid.
+		$order->payment_complete();
+		$this->log_info( 'Payment session completed.', array( 'order_id' => $order_id ) );
+
+		// Clean up the transient.
+		delete_transient( 'spg_payment_session_' . $session_id );
+
+		return rest_ensure_response(
+			array(
+				'success'  => true,
+				'redirect' => $order->get_checkout_order_received_url(),
+			)
+		);
+	}
+
+	/**
+	 * Generate a server-side QR code image from a QR data array.
+	 *
+	 * Uses an external QR generation service (qrserver.com) via server-side
+	 * HTTP request so the browser never contacts the external service directly.
+	 * The result is cached in a transient to avoid repeated remote requests.
+	 *
+	 * Falls back to an empty string (JS will show transfer details instead) when
+	 * the external service is unavailable.
+	 *
+	 * @param array $qr_data Structured QR payload built by the adapter.
+	 * @return string Base64 data URI (data:image/png;base64,...) or empty string.
+	 */
+	private function generate_qr_image( array $qr_data ) {
+		$text      = wp_json_encode( $qr_data );
+		$cache_key = 'spg_qr_img_' . md5( $text );
+
+		$cached = get_transient( $cache_key );
+		if ( false !== $cached ) {
+			return $cached;
+		}
+
+		$api_url  = add_query_arg(
+			array(
+				'size'   => '200x200',
+				'format' => 'png',
+				'data'   => $text,
+			),
+			'https://api.qrserver.com/v1/create-qr-code/'
+		);
+
+		$response = wp_remote_get(
+			$api_url,
+			array(
+				'timeout'    => 10,
+				'user-agent' => 'Split-Payment-Gateway/' . SPG_VERSION,
+			)
+		);
+
+		if ( is_wp_error( $response ) || 200 !== wp_remote_retrieve_response_code( $response ) ) {
+			$this->log_warning(
+				'QR image generation failed – will show text fallback.',
+				array(
+					'url'   => $api_url,
+					'error' => is_wp_error( $response ) ? $response->get_error_message() : wp_remote_retrieve_response_code( $response ),
+				)
+			);
+			// Cache the failure briefly so we don't hammer the service.
+			set_transient( $cache_key, '', 60 );
+			return '';
+		}
+
+		$body      = wp_remote_retrieve_body( $response );
+		$data_uri  = 'data:image/png;base64,' . base64_encode( $body ); // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_encode
+		set_transient( $cache_key, $data_uri, HOUR_IN_SECONDS );
+
+		return $data_uri;
 	}
 
 	/**
