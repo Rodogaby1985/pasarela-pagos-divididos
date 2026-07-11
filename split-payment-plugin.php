@@ -166,9 +166,11 @@ final class Split_Payment_Gateway_Plugin {
 	 */
 	public function activate() {
 		SPG_Migrations::run();
-		// Register the rewrite rule now so that flush_rewrite_rules() below
-		// includes it. Without this call the rule would only be added on the
-		// next 'init' action, which fires after the flush on first activation.
+		// Register the rewrite rule now, during activation only, so that
+		// flush_rewrite_rules() below includes it. Without this call the rule
+		// would only be registered on the next 'init' action, which fires after
+		// the flush, meaning the custom URL would return 404 until the next
+		// page load.
 		$this->add_payment_page_rewrite();
 		flush_rewrite_rules();
 	}

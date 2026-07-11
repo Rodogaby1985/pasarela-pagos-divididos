@@ -270,13 +270,13 @@
             }
             if ( qrData.amount ) {
                 html += '<div class="spg-qr-detail-row">';
-                html +=   '<span class="label">Monto:</span>';
+                html +=   '<span class="label">' + escHtml( i18n.qrAmount || 'Amount:' ) + '</span>';
                 html +=   '<span class="value">' + escHtml( currencySymbol + qrData.amount ) + '</span>';
                 html += '</div>';
             }
             if ( qrData.concept ) {
                 html += '<div class="spg-qr-detail-row">';
-                html +=   '<span class="label">Concepto:</span>';
+                html +=   '<span class="label">' + escHtml( i18n.qrConcept || 'Concept:' ) + '</span>';
                 html +=   '<span class="value">' + escHtml( qrData.concept ) + '</span>';
                 html += '</div>';
             }

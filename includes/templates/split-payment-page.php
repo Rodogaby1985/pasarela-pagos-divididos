@@ -91,6 +91,8 @@ $spg_page_data = array(
 		'payWithGateway'    => __( 'Pay with card / wallet', 'split-payment-gateway' ),
 		'qrInstruction'     => __( 'Scan with your banking app', 'split-payment-gateway' ),
 		'qrAlias'           => __( 'Alias:', 'split-payment-gateway' ),
+		'qrAmount'          => __( 'Amount:', 'split-payment-gateway' ),
+		'qrConcept'         => __( 'Concept:', 'split-payment-gateway' ),
 		'qrExpires'         => __( 'Expires in', 'split-payment-gateway' ),
 		'qrExpired'         => __( 'QR expired. Click refresh to get a new one.', 'split-payment-gateway' ),
 		'qrRefresh'         => __( 'Refresh QR', 'split-payment-gateway' ),
@@ -278,7 +280,7 @@ $spg_page_data = array(
 	</main>
 
 	<footer class="spg-page-footer">
-		<p><?php echo esc_html( get_bloginfo( 'name' ) ); ?> &copy; <?php echo esc_html( gmdate( 'Y' ) ); ?></p>
+		<p><?php echo esc_html( get_bloginfo( 'name' ) ); ?> &copy; <?php echo esc_html( wp_date( 'Y' ) ); ?></p>
 	</footer>
 
 </div><!-- /#spg-payment-page -->

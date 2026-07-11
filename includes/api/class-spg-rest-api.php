@@ -26,6 +26,12 @@ class SPG_Rest_Api {
 
 	const NAMESPACE = 'spg/v1';
 
+	/** Seconds to cache a failed QR generation attempt (prevents rapid retries). */
+	const QR_FAILURE_CACHE_SECONDS = 60;
+
+	/** Maximum accepted size in bytes for a proxied QR image (DoS protection). */
+	const QR_IMAGE_MAX_BYTES = 102400;
+
 	/**
 	 * Register all REST routes.
 	 * Called via rest_api_init.
@@ -681,11 +687,6 @@ class SPG_Rest_Api {
 	}
 
 	/**
-	 * Seconds to cache a failed QR image response to avoid hammering the external service.
-	 */
-	const QR_FAILURE_CACHE_SECONDS = 60;
-
-	/**
 	 * Generate a server-side QR code image from a QR data array.
 	 *
 	 * Uses an external QR generation service (qrserver.com) via server-side
@@ -750,7 +751,7 @@ class SPG_Rest_Api {
 		// Guard against extremely large or empty responses (DoS protection).
 		// A 200x200 PNG QR code should be well under 10 KB.
 		$body_length = strlen( $body );
-		if ( $body_length < 8 || $body_length > 102400 ) {
+		if ( $body_length < 8 || $body_length > self::QR_IMAGE_MAX_BYTES ) {
 			$this->log_warning(
 				'QR image response has unexpected size.',
 				array( 'body_length' => $body_length )
