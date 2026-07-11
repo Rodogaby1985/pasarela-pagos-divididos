@@ -681,9 +681,9 @@ class SPG_Rest_Api {
 	}
 
 	/**
-	 * Seconds to cache a failed QR image response to avoid hammering the service.
+	 * Seconds to cache a failed QR image response to avoid hammering the external service.
 	 */
-	const FAILED_QR_CACHE_SECONDS = 60;
+	const QR_FAILURE_CACHE_SECONDS = 60;
 
 	/**
 	 * Generate a server-side QR code image from a QR data array.
@@ -733,7 +733,7 @@ class SPG_Rest_Api {
 				)
 			);
 			// Cache the failure briefly to avoid hammering the external service.
-			set_transient( $cache_key, '', self::FAILED_QR_CACHE_SECONDS );
+			set_transient( $cache_key, '', self::QR_FAILURE_CACHE_SECONDS );
 			return '';
 		}
 
@@ -741,18 +741,30 @@ class SPG_Rest_Api {
 		$content_type = wp_remote_retrieve_header( $response, 'content-type' );
 		if ( false === strpos( $content_type, 'image/png' ) ) {
 			$this->log_warning( 'QR image response had unexpected content-type.', array( 'content_type' => $content_type ) );
-			set_transient( $cache_key, '', self::FAILED_QR_CACHE_SECONDS );
+			set_transient( $cache_key, '', self::QR_FAILURE_CACHE_SECONDS );
 			return '';
 		}
 
 		$body = wp_remote_retrieve_body( $response );
 
+		// Guard against extremely large or empty responses (DoS protection).
+		// A 200x200 PNG QR code should be well under 10 KB.
+		$body_length = strlen( $body );
+		if ( $body_length < 8 || $body_length > 102400 ) {
+			$this->log_warning(
+				'QR image response has unexpected size.',
+				array( 'body_length' => $body_length )
+			);
+			set_transient( $cache_key, '', self::QR_FAILURE_CACHE_SECONDS );
+			return '';
+		}
+
 		// Validate the PNG file signature (magic bytes: 89 50 4E 47 0D 0A 1A 0A).
 		// This ensures the body actually contains a valid PNG even when the external
 		// service responds with the correct Content-Type header.
-		if ( strlen( $body ) < 8 || "\x89PNG\r\n\x1a\n" !== substr( $body, 0, 8 ) ) {
+		if ( "\x89PNG\r\n\x1a\n" !== substr( $body, 0, 8 ) ) {
 			$this->log_warning( 'QR image response did not contain a valid PNG signature.' );
-			set_transient( $cache_key, '', self::FAILED_QR_CACHE_SECONDS );
+			set_transient( $cache_key, '', self::QR_FAILURE_CACHE_SECONDS );
 			return '';
 		}
 

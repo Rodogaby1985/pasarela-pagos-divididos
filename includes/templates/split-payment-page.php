@@ -15,8 +15,6 @@
 
 defined( 'ABSPATH' ) || exit;
 
-// phpcs:disable WordPress.Security.EscapeOutput.OutputNotEscaped
-
 // Both parameters are read-only display values; actual security is enforced by
 // validating the session_id against a stored transient (see get_transient below).
 // phpcs:disable WordPress.Security.NonceVerification.Recommended
@@ -160,7 +158,7 @@ $spg_page_data = array(
 							value="<?php echo esc_attr( $method['slug'] ); ?>"
 							class="spg-method-radio">
 						<span class="spg-method-icon">
-							<?php echo ( 'qr' === $method['type'] ) ? '📱' : '💳'; ?>
+							<?php echo ( 'qr' === $method['type'] ) ? '📱' : '💳'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- static emoji literals ?>
 						</span>
 						<span class="spg-method-info">
 							<strong><?php echo esc_html( $method['label'] ); ?></strong>
@@ -197,7 +195,7 @@ $spg_page_data = array(
 							value="<?php echo esc_attr( $method['slug'] ); ?>"
 							class="spg-method-radio">
 						<span class="spg-method-icon">
-							<?php echo ( 'qr' === $method['type'] ) ? '📱' : '💳'; ?>
+							<?php echo ( 'qr' === $method['type'] ) ? '📱' : '💳'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- static emoji literals ?>
 						</span>
 						<span class="spg-method-info">
 							<strong><?php echo esc_html( $method['label'] ); ?></strong>

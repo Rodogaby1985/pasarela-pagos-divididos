@@ -368,7 +368,6 @@
             } ).then( function ( resp ) {
                 if ( resp && resp.success ) {
                     // Re-render with updated QR data.
-                    var qrImage = null;
                     if ( paymentData ) {
                         // Trigger a fresh render with the refreshed QR image.
                         if ( section === 'total' ) {
@@ -405,6 +404,9 @@
                     var orig = btn.textContent;
                     btn.textContent = i18n.copied || 'Copied!';
                     setTimeout( function () { btn.textContent = orig; }, COPY_FEEDBACK_DURATION_MS );
+                } ).catch( function () {
+                    // Clipboard API unavailable (e.g. non-HTTPS or permission denied) –
+                    // silently ignore so the rest of the UI continues to work.
                 } );
             }
         } );
