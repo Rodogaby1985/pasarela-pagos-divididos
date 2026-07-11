@@ -105,6 +105,7 @@ $spg_page_data = array(
 		'errorInitiate'     => __( 'Could not start payment. Please try again.', 'split-payment-gateway' ),
 		'errorComplete'     => __( 'Could not finalize order. Please contact support.', 'split-payment-gateway' ),
 		'copied'            => __( 'Copied!', 'split-payment-gateway' ),
+		'copyUnavailable'   => __( 'Select the text manually to copy.', 'split-payment-gateway' ),
 	),
 );
 ?>

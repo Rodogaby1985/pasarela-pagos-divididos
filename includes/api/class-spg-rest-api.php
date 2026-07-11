@@ -769,6 +769,9 @@ class SPG_Rest_Api {
 			return '';
 		}
 
+		// QR_IMAGE_MAX_BYTES (100 KB) caps the input, so the resulting base64
+		// data URI will be at most ~136 KB – well within browser limits for
+		// data URIs (typically 2 MB), preventing client-side memory issues.
 		$data_uri = 'data:image/png;base64,' . base64_encode( $body ); // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_encode
 		set_transient( $cache_key, $data_uri, HOUR_IN_SECONDS );
 

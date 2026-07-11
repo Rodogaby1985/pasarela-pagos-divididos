@@ -399,17 +399,51 @@
             var btn = e.target.closest( '.spg-copy-btn[data-copy-from]' );
             if ( ! btn ) return;
             var srcEl = el( btn.getAttribute( 'data-copy-from' ) );
-            if ( srcEl ) {
+            if ( ! srcEl ) return;
+
+            // Clipboard API requires a secure context (HTTPS) and user permission.
+            if ( navigator.clipboard && typeof navigator.clipboard.writeText === 'function' ) {
                 navigator.clipboard.writeText( srcEl.textContent.trim() ).then( function () {
                     var orig = btn.textContent;
                     btn.textContent = i18n.copied || 'Copied!';
                     setTimeout( function () { btn.textContent = orig; }, COPY_FEEDBACK_DURATION_MS );
                 } ).catch( function () {
-                    // Clipboard API unavailable (e.g. non-HTTPS or permission denied) –
-                    // silently ignore so the rest of the UI continues to work.
+                    // Permission denied or unexpected error – fall through to fallback.
+                    selectAndCopyFallback( srcEl, btn );
                 } );
+            } else {
+                // Non-HTTPS context or unsupported browser: use execCommand fallback.
+                selectAndCopyFallback( srcEl, btn );
             }
         } );
+    }
+
+    /**
+     * Fallback copy using deprecated execCommand for non-HTTPS or older browsers.
+     * Shows a brief visual cue when it works, and a helpful message when it does not.
+     *
+     * @param {Element} srcEl - Element whose text to copy.
+     * @param {Element} btn   - Button to update with feedback text.
+     */
+    function selectAndCopyFallback( srcEl, btn ) {
+        try {
+            var range = document.createRange();
+            range.selectNodeContents( srcEl );
+            var sel = window.getSelection();
+            sel.removeAllRanges();
+            sel.addRange( range );
+            var ok = document.execCommand( 'copy' );
+            sel.removeAllRanges();
+            if ( ok ) {
+                var orig = btn.textContent;
+                btn.textContent = i18n.copied || 'Copied!';
+                setTimeout( function () { btn.textContent = orig; }, COPY_FEEDBACK_DURATION_MS );
+            } else {
+                btn.title = i18n.copyUnavailable || 'Select the text manually to copy.';
+            }
+        } catch ( err ) {
+            btn.title = i18n.copyUnavailable || 'Select the text manually to copy.';
+        }
     }
 
     // ── Gateway button ────────────────────────────────────────────────────────
