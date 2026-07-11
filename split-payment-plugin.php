@@ -166,7 +166,9 @@ final class Split_Payment_Gateway_Plugin {
 	 */
 	public function activate() {
 		SPG_Migrations::run();
-		// Register rewrite rule before flushing.
+		// Register the rewrite rule now so that flush_rewrite_rules() below
+		// includes it. Without this call the rule would only be added on the
+		// next 'init' action, which fires after the flush on first activation.
 		$this->add_payment_page_rewrite();
 		flush_rewrite_rules();
 	}

@@ -33,6 +33,10 @@
     var i18n           = cfg.i18n           || {};
     var qrExpiry       = parseInt( cfg.qrExpirySeconds || 900, 10 );
 
+    // ── Constants ────────────────────────────────────────────────────────────
+    var POLL_INTERVAL_MS        = 2500; // How often (ms) to poll payment status.
+    var COPY_FEEDBACK_DURATION_MS = 1500; // How long (ms) to show "Copied!" feedback.
+
     // ── State ────────────────────────────────────────────────────────────────
     var shippingPaid    = false;
     var totalPaid       = false;
@@ -400,7 +404,7 @@
                 navigator.clipboard.writeText( srcEl.textContent.trim() ).then( function () {
                     var orig = btn.textContent;
                     btn.textContent = i18n.copied || 'Copied!';
-                    setTimeout( function () { btn.textContent = orig; }, 1500 );
+                    setTimeout( function () { btn.textContent = orig; }, COPY_FEEDBACK_DURATION_MS );
                 } );
             }
         } );
@@ -423,7 +427,7 @@
 
     function startPolling() {
         if ( pollTimer ) clearInterval( pollTimer );
-        pollTimer = setInterval( pollStatus, 2500 );
+        pollTimer = setInterval( pollStatus, POLL_INTERVAL_MS );
     }
 
     function stopPolling() {
