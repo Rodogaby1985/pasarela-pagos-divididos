@@ -66,8 +66,10 @@ class SPG_CBI_QR_Generator {
 		$inner .= self::tlv( '02', $psp_id );        // PSP identifier (e.g. "00000031" Red Link)
 
 		// Sanitise merchant name and city to stay within spec limits.
-		$name = substr( $merchant_name, 0, self::MERCHANT_NAME_MAX_LEN );
-		$city = substr( $merchant_city, 0, self::MERCHANT_CITY_MAX_LEN );
+		// Use mb_substr() to truncate on Unicode character boundaries, avoiding
+		// split multi-byte sequences (e.g. Spanish accented characters).
+		$name = mb_substr( $merchant_name, 0, self::MERCHANT_NAME_MAX_LEN, 'UTF-8' );
+		$city = mb_substr( $merchant_city, 0, self::MERCHANT_CITY_MAX_LEN, 'UTF-8' );
 
 		// Format amount with exactly two decimal places and no thousands separator.
 		$amount_str = number_format( $amount, 2, '.', '' );
