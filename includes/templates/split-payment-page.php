@@ -33,7 +33,7 @@ if ( ! $session ) {
 global $wpdb;
 $available_methods = array();
 // phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
-$active_gateways   = $wpdb->get_results(
+$active_gateways = $wpdb->get_results(
 	$wpdb->prepare(
 		"SELECT DISTINCT gateway_name FROM `{$wpdb->prefix}spg_client_gateways` WHERE is_active = %d",
 		1
