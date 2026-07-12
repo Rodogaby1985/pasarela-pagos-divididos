@@ -708,7 +708,7 @@ class SPG_Rest_Api {
 			return $cached;
 		}
 
-		$api_url  = add_query_arg(
+		$api_url = add_query_arg(
 			array(
 				'size'   => '200x200',
 				'format' => 'png',

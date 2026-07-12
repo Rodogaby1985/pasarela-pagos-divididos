@@ -32,7 +32,7 @@ if ( ! $session ) {
 // Collect available payment methods from the DB + QR options.
 global $wpdb;
 $available_methods = array();
-$active_gateways   = $wpdb->get_results(
+$active_gateways   = $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 	$wpdb->prepare(
 		"SELECT DISTINCT gateway_name FROM `{$wpdb->prefix}spg_client_gateways` WHERE is_active = %d",
 		1
@@ -55,7 +55,12 @@ foreach ( $active_gateways as $gw ) {
 
 // Include QR Transfer if configured via wp_options (not in spg_client_gateways).
 if ( get_option( 'spg_qr_alias_subtotal', '' ) || get_option( 'spg_qr_alias_shipping', '' ) ) {
-	$qr_already = array_filter( $available_methods, function ( $m ) { return 'qr_transfer' === $m['slug']; } );
+	$qr_already = array_filter(
+		$available_methods,
+		function ( $m ) {
+			return 'qr_transfer' === $m['slug'];
+		}
+	);
 	if ( empty( $qr_already ) ) {
 		$available_methods[] = array(
 			'slug'  => 'qr_transfer',
@@ -83,29 +88,29 @@ $spg_page_data = array(
 	'availableMethods' => $available_methods,
 	'qrExpirySeconds'  => class_exists( 'SPG_QR_Transfer_Adapter' ) ? SPG_QR_Transfer_Adapter::EXPIRY_SECONDS : 900,
 	'i18n'             => array(
-		'pageTitle'         => __( 'Complete Your Payment', 'split-payment-gateway' ),
-		'subtotalLabel'     => __( 'Subtotal', 'split-payment-gateway' ),
-		'shippingLabel'     => __( 'Shipping', 'split-payment-gateway' ),
-		'selectMethod'      => __( 'How would you like to pay?', 'split-payment-gateway' ),
-		'startPayment'      => __( 'Start Payment', 'split-payment-gateway' ),
-		'payWithGateway'    => __( 'Pay with card / wallet', 'split-payment-gateway' ),
-		'qrInstruction'     => __( 'Scan with your banking app', 'split-payment-gateway' ),
-		'qrAlias'           => __( 'Alias:', 'split-payment-gateway' ),
-		'qrAmount'          => __( 'Amount:', 'split-payment-gateway' ),
-		'qrConcept'         => __( 'Concept:', 'split-payment-gateway' ),
-		'qrExpires'         => __( 'Expires in', 'split-payment-gateway' ),
-		'qrExpired'         => __( 'QR expired. Click refresh to get a new one.', 'split-payment-gateway' ),
-		'qrRefresh'         => __( 'Refresh QR', 'split-payment-gateway' ),
-		'statusPending'     => __( 'Waiting for payment…', 'split-payment-gateway' ),
-		'statusPaid'        => __( '✅ Paid', 'split-payment-gateway' ),
-		'statusFailed'      => __( '❌ Failed', 'split-payment-gateway' ),
-		'finalizeOrder'     => __( 'Finalize Order', 'split-payment-gateway' ),
-		'processing'        => __( 'Processing…', 'split-payment-gateway' ),
-		'bothPaidMessage'   => __( 'Both payments confirmed! Click below to complete your order.', 'split-payment-gateway' ),
-		'errorInitiate'     => __( 'Could not start payment. Please try again.', 'split-payment-gateway' ),
-		'errorComplete'     => __( 'Could not finalize order. Please contact support.', 'split-payment-gateway' ),
-		'copied'            => __( 'Copied!', 'split-payment-gateway' ),
-		'copyUnavailable'   => __( 'Select the text manually to copy.', 'split-payment-gateway' ),
+		'pageTitle'       => __( 'Complete Your Payment', 'split-payment-gateway' ),
+		'subtotalLabel'   => __( 'Subtotal', 'split-payment-gateway' ),
+		'shippingLabel'   => __( 'Shipping', 'split-payment-gateway' ),
+		'selectMethod'    => __( 'How would you like to pay?', 'split-payment-gateway' ),
+		'startPayment'    => __( 'Start Payment', 'split-payment-gateway' ),
+		'payWithGateway'  => __( 'Pay with card / wallet', 'split-payment-gateway' ),
+		'qrInstruction'   => __( 'Scan with your banking app', 'split-payment-gateway' ),
+		'qrAlias'         => __( 'Alias:', 'split-payment-gateway' ),
+		'qrAmount'        => __( 'Amount:', 'split-payment-gateway' ),
+		'qrConcept'       => __( 'Concept:', 'split-payment-gateway' ),
+		'qrExpires'       => __( 'Expires in', 'split-payment-gateway' ),
+		'qrExpired'       => __( 'QR expired. Click refresh to get a new one.', 'split-payment-gateway' ),
+		'qrRefresh'       => __( 'Refresh QR', 'split-payment-gateway' ),
+		'statusPending'   => __( 'Waiting for payment…', 'split-payment-gateway' ),
+		'statusPaid'      => __( '✅ Paid', 'split-payment-gateway' ),
+		'statusFailed'    => __( '❌ Failed', 'split-payment-gateway' ),
+		'finalizeOrder'   => __( 'Finalize Order', 'split-payment-gateway' ),
+		'processing'      => __( 'Processing…', 'split-payment-gateway' ),
+		'bothPaidMessage' => __( 'Both payments confirmed! Click below to complete your order.', 'split-payment-gateway' ),
+		'errorInitiate'   => __( 'Could not start payment. Please try again.', 'split-payment-gateway' ),
+		'errorComplete'   => __( 'Could not finalize order. Please contact support.', 'split-payment-gateway' ),
+		'copied'          => __( 'Copied!', 'split-payment-gateway' ),
+		'copyUnavailable' => __( 'Select the text manually to copy.', 'split-payment-gateway' ),
 	),
 );
 ?>
