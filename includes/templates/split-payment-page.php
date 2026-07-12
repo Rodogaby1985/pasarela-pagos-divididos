@@ -32,7 +32,7 @@ if ( ! $session ) {
 // Collect available payment methods from the DB + QR options.
 global $wpdb;
 $available_methods = array();
-$active_gateways   = $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+$active_gateways   = $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- One-time read per page load; output is immediately embedded in HTML, so object-cache would not benefit here.
 	$wpdb->prepare(
 		"SELECT DISTINCT gateway_name FROM `{$wpdb->prefix}spg_client_gateways` WHERE is_active = %d",
 		1
