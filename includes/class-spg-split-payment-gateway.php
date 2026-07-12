@@ -100,6 +100,11 @@ class SPG_Split_Payment_Gateway extends WC_Payment_Gateway {
 	/**
 	 * Process the payment for an order.
 	 *
+	 * Instead of immediately initiating the split payment (which caused double-initiation
+	 * issues and required redirecting to WooCommerce's order-pay page), this method creates
+	 * a payment session and redirects to our own full-page payment UI. This bypasses
+	 * WooCommerce's order-pay permission validation entirely.
+	 *
 	 * @param int $order_id WooCommerce order ID.
 	 * @return array WooCommerce result array.
 	 */
@@ -107,52 +112,48 @@ class SPG_Split_Payment_Gateway extends WC_Payment_Gateway {
 		$order     = wc_get_order( $order_id );
 		$client_id = $this->get_option( 'client_id', sanitize_key( get_option( 'blogname', 'default' ) ) );
 
-		try {
-			$service = $this->get_service();
-			$result  = $service->initiate( $order, $client_id );
-
-			// Reduce order stock.
-			wc_reduce_stock_levels( $order_id );
-
-			// Empty the cart.
-			WC()->cart->empty_cart();
-
-			// Redirect to a page where the modal is shown.
-			$redirect_url = add_query_arg(
-				array(
-					'spg_order_id'        => $order_id,
-					'spg_session_id'      => $result['session_id'],
-					'spg_shipping_url'    => rawurlencode( $result['shipping_payment_url'] ),
-					'spg_total_url'       => rawurlencode( $result['total_payment_url'] ),
-					'spg_shipping_amount' => $order->get_shipping_total(),
-					'spg_total_amount'    => $order->get_subtotal(),
-					'spg_shipping_gw'     => $result['shipping_gateway'],
-					'spg_total_gw'        => $result['total_gateway'],
-				),
-				wc_get_page_permalink( 'checkout' ) . 'order-pay/' . $order_id . '/'
-			);
-
-			return array(
-				'result'   => 'success',
-				'redirect' => $redirect_url,
-			);
-
-		} catch ( Exception $e ) {
-			$this->log_error(
-				'Payment initiation failed.',
-				array(
-					'order_id' => $order_id,
-					'error'    => $e->getMessage(),
-				)
-			);
-
+		if ( ! $order ) {
 			wc_add_notice(
 				__( 'Payment could not be initiated. Please try again.', 'split-payment-gateway' ),
 				'error'
 			);
-
 			return array( 'result' => 'failure' );
 		}
+
+		// Create a lightweight session token. The actual payment initiation (adapter calls,
+		// DB records) happens only once the customer selects their payment methods on the
+		// dedicated payment page. This prevents double-initiation.
+		$session_id = bin2hex( random_bytes( 16 ) );
+		set_transient(
+			'spg_payment_session_' . $session_id,
+			array(
+				'order_id'        => $order_id,
+				'client_id'       => $client_id,
+				'shipping_amount' => $order->get_shipping_total(),
+				'total_amount'    => $order->get_subtotal(),
+				'currency'        => $order->get_currency(),
+			),
+			30 * MINUTE_IN_SECONDS
+		);
+
+		// Reduce order stock and empty the cart early (same as WooCommerce expects).
+		wc_reduce_stock_levels( $order_id );
+		WC()->cart->empty_cart();
+
+		// Redirect to our full-page payment UI, bypassing WooCommerce's order-pay
+		// validation which causes "this order is not valid" errors.
+		$redirect_url = add_query_arg(
+			array(
+				'spg_order_id'   => $order_id,
+				'spg_session_id' => $session_id,
+			),
+			home_url( '/spg-payment-page/' )
+		);
+
+		return array(
+			'result'   => 'success',
+			'redirect' => $redirect_url,
+		);
 	}
 
 	/**
