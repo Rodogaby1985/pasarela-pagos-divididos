@@ -54,6 +54,8 @@ class Test_CBI_QR_Generator extends TestCase {
 	public function test_payload_ends_with_crc_tag() {
 		$payload = SPG_CBI_QR_Generator::generate( 'mi.alias', 100.00, 'Store', 'Buenos Aires' );
 		// Must match: ...6304<4 hex chars>
+		// assertRegExp is used here because the project targets PHPUnit 8.5.
+		// assertMatchesRegularExpression() was added in PHPUnit 9.1.
 		$this->assertRegExp( '/6304[0-9A-F]{4}$/', $payload );
 	}
 
@@ -166,8 +168,8 @@ class Test_CBI_QR_Generator extends TestCase {
 	public function test_merchant_name_truncated_to_25_chars() {
 		$long_name = 'Supermercado El Mayorista SRL';  // 29 chars
 		$payload   = SPG_CBI_QR_Generator::generate( 'mi.alias', 100.00, $long_name, 'CABA' );
-		// Only first 25 chars should appear.
-		$truncated = substr( $long_name, 0, 25 );
+		// Only first 25 chars should appear (using mb_substr to match implementation).
+		$truncated = mb_substr( $long_name, 0, 25, 'UTF-8' );
 		$this->assertStringContainsString( $truncated, $payload );
 		$this->assertStringNotContainsString( $long_name, $payload );
 	}
@@ -178,7 +180,8 @@ class Test_CBI_QR_Generator extends TestCase {
 	public function test_merchant_city_truncated_to_15_chars() {
 		$long_city = 'San Carlos de Bariloche'; // 23 chars
 		$payload   = SPG_CBI_QR_Generator::generate( 'mi.alias', 100.00, 'Store', $long_city );
-		$truncated = substr( $long_city, 0, 15 );
+		// Only first 15 chars should appear (using mb_substr to match implementation).
+		$truncated = mb_substr( $long_city, 0, 15, 'UTF-8' );
 		$this->assertStringContainsString( $truncated, $payload );
 		$this->assertStringNotContainsString( $long_city, $payload );
 	}
