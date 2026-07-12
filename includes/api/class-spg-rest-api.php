@@ -9,6 +9,12 @@
  *   POST   /spg/v1/split-payment/validate
  *   POST   /spg/v1/webhooks/{gateway}
  *   GET    /spg/v1/admin/fiscal-report/{client_id}
+ *   POST   /spg/v1/payment-session/initiate
+ *   GET    /spg/v1/payment-session/status
+ *   POST   /spg/v1/payment-session/complete
+ *   POST   /spg/v1/checkout/split-payment       (v2 alias for payment-session/initiate)
+ *   GET    /spg/v1/split-payment/validate        (v2 session-based status)
+ *   POST   /spg/v1/checkout/confirm-order        (v2 alias for payment-session/complete)
  *
  * @package SplitPaymentGateway
  */
@@ -256,6 +262,76 @@ class SPG_Rest_Api {
 		register_rest_route(
 			self::NAMESPACE,
 			'/payment-session/complete',
+			array(
+				'methods'             => WP_REST_Server::CREATABLE,
+				'callback'            => array( $instance, 'complete_payment_session' ),
+				'permission_callback' => '__return_true',
+				'args'                => array(
+					'session_id' => array(
+						'required'          => true,
+						'type'              => 'string',
+						'sanitize_callback' => 'sanitize_key',
+					),
+				),
+			)
+		);
+
+		// ── v2 checkout endpoints ──────────────────────────────────────────────
+		// These routes use the v2 naming convention requested by the v2.0.0
+		// architecture design.  Internally they delegate to the same session-based
+		// handlers as the payment-session/* routes above.
+
+		// POST /spg/v1/checkout/split-payment – initiate a payment session.
+		register_rest_route(
+			self::NAMESPACE,
+			'/checkout/split-payment',
+			array(
+				'methods'             => WP_REST_Server::CREATABLE,
+				'callback'            => array( $instance, 'initiate_payment_session' ),
+				'permission_callback' => '__return_true',
+				'args'                => array(
+					'session_id'      => array(
+						'required'          => true,
+						'type'              => 'string',
+						'sanitize_callback' => 'sanitize_key',
+					),
+					'shipping_method' => array(
+						'required'          => false,
+						'type'              => 'string',
+						'sanitize_callback' => 'sanitize_key',
+					),
+					'total_method'    => array(
+						'required'          => false,
+						'type'              => 'string',
+						'sanitize_callback' => 'sanitize_key',
+					),
+				),
+			)
+		);
+
+		// GET /spg/v1/split-payment/validate – session-based status poll (publicly accessible).
+		// Note: a POST version of this route also exists (order-based, auth required).
+		register_rest_route(
+			self::NAMESPACE,
+			'/split-payment/validate',
+			array(
+				'methods'             => WP_REST_Server::READABLE,
+				'callback'            => array( $instance, 'get_payment_session_status' ),
+				'permission_callback' => '__return_true',
+				'args'                => array(
+					'session_id' => array(
+						'required'          => true,
+						'type'              => 'string',
+						'sanitize_callback' => 'sanitize_key',
+					),
+				),
+			)
+		);
+
+		// POST /spg/v1/checkout/confirm-order – verify both payments and mark order paid.
+		register_rest_route(
+			self::NAMESPACE,
+			'/checkout/confirm-order',
 			array(
 				'methods'             => WP_REST_Server::CREATABLE,
 				'callback'            => array( $instance, 'complete_payment_session' ),
