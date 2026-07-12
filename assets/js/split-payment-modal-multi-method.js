@@ -280,7 +280,9 @@
     function buildQrPanel(section, qrData, expiresAt) {
         if (!qrData) return '';
 
-        const aliasHtml = qrData.alias
+        // CBI format: qrData is a string – no individual fields to display.
+        // Legacy JSON format: qrData is an object with alias, amount, etc.
+        const aliasHtml = (typeof qrData === 'object' && qrData.alias)
             ? `<p class="spg-qr-alias">${escapeHtml(i18n.qrAlias || 'Alias:')} <strong>${escapeHtml(qrData.alias)}</strong></p>`
             : '';
 
@@ -338,15 +340,18 @@
      * Render a QR code image inside the designated container.
      * Uses the lightweight qrcode-generator library loaded below.
      *
-     * @param {string} section  'shipping' or 'total'
-     * @param {Object} qrData   QR payload object from the server.
+     * Handles both CBI format (string) and legacy JSON format (object).
+     *
+     * @param {string}        section  'shipping' or 'total'
+     * @param {string|Object} qrData   CBI TLV string or legacy QR payload object.
      */
     function renderQrCode(section, qrData) {
         const $container = $(`#spg-qr-canvas-${section}`);
         if (!$container.length) return;
 
-        // Encode the full payload as a JSON string → QR.
-        const text = JSON.stringify(qrData);
+        // CBI: use the TLV string directly for QR encoding.
+        // Legacy JSON: serialise the object to a JSON string.
+        const text = (typeof qrData === 'string') ? qrData : JSON.stringify(qrData);
 
         try {
             // Use the bundled minimal QR generator (qrCodeGenerate defined below).

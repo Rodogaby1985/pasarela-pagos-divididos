@@ -130,6 +130,9 @@
             qr_alias_shipping : $('#spg-qr-alias-shipping').val(),
             qr_country        : $('#spg-qr-country').val(),
             qr_webhook_secret : $('#spg-qr-webhook-secret').val(),
+            qr_merchant_name  : $('#spg-qr-merchant-name').val(),
+            qr_merchant_city  : $('#spg-qr-merchant-city').val(),
+            qr_psp_id         : $('#spg-qr-psp-id').val(),
         };
         ajaxAction('spg_save_qr_settings', data, function () {
             showNotice(i18n.saved, 'success');
@@ -333,6 +336,9 @@
             qr_cbu_shipping:     $('#spg-qr-cbu-shipping').val(),
             qr_holder_shipping:  $('#spg-qr-holder-shipping').val(),
             qr_webhook_secret:   $('#spg-qr-webhook-secret').val(),
+            qr_merchant_name:    $('#spg-qr-merchant-name').val(),
+            qr_merchant_city:    $('#spg-qr-merchant-city').val(),
+            qr_psp_id:           $('#spg-qr-psp-id').val(),
         };
         ajaxAction('spg_save_qr_gateways_settings', data, function () {
             showGwNotice(i18n.saved, 'success');

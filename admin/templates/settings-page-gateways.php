@@ -259,6 +259,58 @@ defined( 'ABSPATH' ) || exit;
 				</tr>
 			</table>
 
+			<h4><?php esc_html_e( 'CBI (Código de Barras Interoperable) – Argentina', 'split-payment-gateway' ); ?></h4>
+			<p class="description">
+				<?php esc_html_e( 'Requerido para generar QR estándar CBI compatible con todos los bancos y billeteras argentinas.', 'split-payment-gateway' ); ?>
+			</p>
+
+			<table class="form-table">
+				<tr>
+					<th><label for="spg-qr-merchant-name"><?php esc_html_e( 'Nombre del Comercio', 'split-payment-gateway' ); ?></label></th>
+					<td>
+						<input type="text"
+								id="spg-qr-merchant-name"
+								name="qr_merchant_name"
+								class="regular-text"
+								maxlength="25"
+								value="<?php echo esc_attr( $qr_settings['merchant_name'] ); ?>"
+								placeholder="<?php echo esc_attr( get_bloginfo( 'name' ) ); ?>">
+						<p class="description">
+							<?php esc_html_e( 'Nombre que verá el cliente en su app bancaria (máx. 25 caracteres).', 'split-payment-gateway' ); ?>
+						</p>
+					</td>
+				</tr>
+				<tr>
+					<th><label for="spg-qr-merchant-city"><?php esc_html_e( 'Ciudad del Comercio', 'split-payment-gateway' ); ?></label></th>
+					<td>
+						<input type="text"
+								id="spg-qr-merchant-city"
+								name="qr_merchant_city"
+								class="regular-text"
+								maxlength="15"
+								value="<?php echo esc_attr( $qr_settings['merchant_city'] ); ?>"
+								placeholder="Buenos Aires">
+						<p class="description">
+							<?php esc_html_e( 'Ciudad del comercio (máx. 15 caracteres). Requerido por el estándar CBI.', 'split-payment-gateway' ); ?>
+						</p>
+					</td>
+				</tr>
+				<tr>
+					<th><label for="spg-qr-psp-id"><?php esc_html_e( 'PSP ID', 'split-payment-gateway' ); ?></label></th>
+					<td>
+						<input type="text"
+								id="spg-qr-psp-id"
+								name="qr_psp_id"
+								class="regular-text"
+								value="<?php echo esc_attr( $qr_settings['psp_id'] ); ?>"
+								placeholder="00000031">
+						<p class="description">
+							<?php esc_html_e( 'Identificador del PSP. El valor "00000031" corresponde a Red Link. Solo cambiar si tu PSP requiere otro valor.', 'split-payment-gateway' ); ?>
+						</p>
+					</td>
+				</tr>
+			</table>
+
 			<p>
 				<button class="button button-primary" id="spg-qr-save">
 					<?php esc_html_e( 'Guardar Configuración QR Transfer', 'split-payment-gateway' ); ?>
