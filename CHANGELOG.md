@@ -7,6 +7,82 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.1.0] - 2026-07-13
+
+### 🚀 CBI (Código de Barras Interoperable) QR Implementation
+
+#### Added
+- **CBI Standard QR Code Generation** (`includes/class-spg-cbi-qr-generator.php`)
+  - Generates BCRA-compliant QR codes (Com. "A" 6506)
+  - Based on EMV QR Code Specification for Payment Systems
+  - Interoperable with ALL Argentine banks and billeteras
+  - TLV (Tag Length Value) format encoding
+  - Automatic CRC16-CCITT checksum calculation
+
+- **Merchant Configuration Fields**
+  - Merchant name for QR (defaults to site name)
+  - Merchant city (configurable in admin)
+  - PSP ID support (defaults to Red Link "00000031")
+  - Stored in wp_options for easy management
+
+- **QR Transfer Adapter Enhancements**
+  - Now generates standard CBI format instead of custom JSON
+  - Reads merchant details from WooCommerce settings
+  - Validates alias/CBU format
+  - Improved data integrity with CRC16 checksum
+
+#### Fixed
+- ✅ "No se puede pagar con este código QR" error - **NOW RESOLVED**
+  - Old format was non-standard, banks rejected it
+  - New CBI format is official BCRA standard
+  - All banks/billeteras now understand the QR
+
+- ✅ QR scanning with MercadoPago app
+- ✅ QR scanning with MODO app  
+- ✅ QR scanning with native banking apps (BBVA, Santander, etc.)
+- ✅ Automatic amount and alias population in billetera
+
+#### Changed
+- `SPG_QR_Transfer_Adapter::initiate()` now generates CBI format
+- QR payload stored as TLV string (interoperable) instead of custom JSON
+- `qr_type` field added to response: `'qr_type' => 'cbi'`
+
+#### Technical Details
+- **CBI Field Structure:**
+  - `00` - Payload Format Indicator
+  - `01` - Point of Initiation (dynamic)
+  - `26` - Merchant Account Information (with PSP ID, identifier type, value)
+  - `54` - Transaction Amount
+  - `58` - Country Code (AR)
+  - `59` - Merchant Name
+  - `60` - Merchant City
+  - `63` - CRC16-CCITT Checksum
+
+- **Backward Compatibility:** Existing QR records still work; new ones use CBI
+- **Database:** No migration needed; only content format changes
+- **Security:** CRC16 checksum validates data integrity
+
+#### Migration Guide
+1. **Update to v2.1.0**
+2. **Configure in admin:**
+   - Go to: WooCommerce → Settings → Split Payment Gateway → QR Transfer
+   - Verify: Merchant Name (defaults to site name)
+   - Set: Merchant City (required for CBI)
+3. **Test scanning:**
+   - Generate new QR at checkout
+   - Scan with MercadoPago/MODO/banking app
+   - Should see amount + alias auto-filled
+   - Complete transfer without errors
+
+#### Benefits
+✅ **Official Standard:** BCRA Com. "A" 6506 compliant
+✅ **Universal Compatibility:** Works with all Argentine banks
+✅ **No More Errors:** Banks understand CBI format natively
+✅ **Enhanced Security:** CRC16 integrity check
+✅ **Better UX:** Automatic amount/alias population in billeteras
+
+---
+
 ## [2.0.0] - 2026-07-12
 
 ### 🚀 Major Refactor: Pre-Order Full-Page Payment Architecture
