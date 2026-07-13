@@ -61,9 +61,9 @@ class SPG_CBI_QR_Generator {
 		$id_type = self::get_identifier_type( $alias_or_cbu );
 
 		// Build Merchant Account Info (tag 26) inner content (TLV sub-fields).
-		$inner  = self::tlv( '00', $id_type );       // Identifier type (CBU / CVU / ALIAS)
-		$inner .= self::tlv( '01', $alias_or_cbu );  // Actual CBU / CVU / Alias value
-		$inner .= self::tlv( '02', $psp_id );        // PSP identifier (e.g. "00000031" Red Link)
+		$inner  = self::tlv( '00', $id_type );       // Identifier type (CBU / CVU / ALIAS).
+		$inner .= self::tlv( '01', $alias_or_cbu );  // Actual CBU / CVU / Alias value.
+		$inner .= self::tlv( '02', $psp_id );        // PSP identifier (e.g. "00000031" Red Link).
 
 		// Sanitise merchant name and city to stay within spec limits.
 		// Use mb_substr() to truncate on Unicode character boundaries, avoiding
@@ -75,13 +75,13 @@ class SPG_CBI_QR_Generator {
 		$amount_str = number_format( $amount, 2, '.', '' );
 
 		// Build the main TLV payload (CRC placeholder added last).
-		$payload  = self::tlv( '00', '01' );                   // Payload Format Indicator (always "01")
-		$payload .= self::tlv( '01', '12' );                   // Point of Initiation (12 = dynamic per-transaction)
-		$payload .= self::tlv( '26', $inner );                 // Merchant Account Info (CBI)
-		$payload .= self::tlv( '54', $amount_str );            // Transaction Amount
-		$payload .= self::tlv( '58', strtoupper( $country ) ); // Country Code
-		$payload .= self::tlv( '59', $name );                  // Merchant Name
-		$payload .= self::tlv( '60', $city );                  // Merchant City
+		$payload  = self::tlv( '00', '01' );                   // Payload Format Indicator (always "01").
+		$payload .= self::tlv( '01', '12' );                   // Point of Initiation (12 = dynamic per-transaction).
+		$payload .= self::tlv( '26', $inner );                 // Merchant Account Info (CBI).
+		$payload .= self::tlv( '54', $amount_str );            // Transaction Amount.
+		$payload .= self::tlv( '58', strtoupper( $country ) ); // Country Code.
+		$payload .= self::tlv( '59', $name );                  // Merchant Name.
+		$payload .= self::tlv( '60', $city );                  // Merchant City.
 
 		// Append CRC tag + length placeholder, then compute and append the checksum.
 		// CRC covers the entire payload including "6304" (tag + len).
