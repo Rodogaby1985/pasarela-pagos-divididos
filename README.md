@@ -37,7 +37,8 @@ CUSTOMER AT CHECKOUT
 SELECTS "QR Transfer" for Subtotal OR Shipping
     ↓
 QR IS GENERATED:
-  ├─ Encodes: alias, amount, currency, concept, expiry, SHA-256 hash
+  ├─ Argentina: encodes a CBI TLV payload (BCRA / EMV interoperable QR)
+  ├─ Other countries: uses the legacy JSON payload
   ├─ 15-minute countdown timer shown inline
   └─ Customer scans with banking app (Mercado Pago, MODO, bank app, etc.)
     ↓
@@ -50,18 +51,8 @@ ORDER COMPLETES when both sections are paid
 
 ### QR Data Format
 
-```json
-{
-  "v":       "1",
-  "alias":   "tienda.empresa",
-  "amount":  "100.00",
-  "currency": "ARS",
-  "concept": "Orden #123",
-  "ref":     "123-total",
-  "exp":     1700000000,
-  "hash":    "sha256hmac..."
-}
-```
+- **Argentina (`AR`)**: CBI (`Código de Barras Interoperable`) TLV string compatible with Argentine banks and billeteras.
+- **Other countries**: legacy JSON payload for backward compatibility.
 
 ### Country Support
 
@@ -77,8 +68,9 @@ ORDER COMPLETES when both sections are paid
 1. Go to **WooCommerce → Split Payment → QR Transfer**
 2. Enter the **Subtotal Alias** (store account)
 3. Enter the **Shipping Alias** (logistics operator account)
-4. Set the **Webhook Secret** for signature validation
-5. Configure your banking platform to send confirmations to:
+4. For Argentina, set the **Merchant Name** and required **Merchant City**
+5. Set the **Webhook Secret** for signature validation
+6. Configure your banking platform to send confirmations to:
    `POST https://yoursite.com/wp-json/spg/v1/webhooks/qr-transfer`
 
 ---
