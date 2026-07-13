@@ -42,27 +42,34 @@ Ir a **WooCommerce → SPG Gateways** → sección **QR Transfer (Argentina)**
 | CBU/CVU | Fallback | `0000000000000000000000` |
 | Titular | Nombre del titular | `Logística S.A.` |
 
+### Datos CBI del comercio
+
+| Campo | Descripción | Ejemplo |
+|-------|-------------|---------|
+| Nombre del Comercio | Nombre visible en la app bancaria del cliente | `Mi Tienda` |
+| Ciudad del Comercio | Ciudad requerida por el estándar CBI | `Buenos Aires` |
+| PSP ID | Identificador del proveedor PSP (por defecto Red Link) | `00000031` |
+
 ---
 
 ## 3. Formato del QR
 
-El QR codifica el siguiente JSON:
+Para Argentina, el QR codifica un payload **CBI** (Código de Barras Interoperable) en formato **TLV**
+siguiendo la Comunicación BCRA **"A" 6506** y la especificación **EMV QR**.
 
-```json
-{
-  "v":       "1",
-  "alias":   "tienda.empresa.ar",
-  "amount":  "100.00",
-  "currency": "ARS",
-  "concept": "Orden #123",
-  "ref":     "123-total",
-  "exp":     1700000000,
-  "hash":    "sha256-hmac..."
-}
-```
+Campos principales incluidos en el payload:
+
+- `00` - Payload Format Indicator
+- `01` - Point of Initiation Method
+- `26` - Merchant Account Information (tipo + alias/CBU/CVU + PSP ID)
+- `54` - Monto
+- `58` - País (`AR`)
+- `59` - Nombre del comercio
+- `60` - Ciudad del comercio
+- `63` - CRC16-CCITT
 
 - **Validez:** 15 minutos
-- **hash:** HMAC-SHA256 generado por el plugin para validar integridad
+- **Integridad:** el plugin agrega CRC16 al payload y un hash HMAC para identificar la operación internamente
 
 ---
 
