@@ -299,10 +299,19 @@ class SPG_Admin_Settings {
 		$alias_shipping = sanitize_text_field( $post_data['qr_alias_shipping'] ?? '' );
 		$webhook_secret = sanitize_text_field( $post_data['qr_webhook_secret'] ?? '' );
 		$country        = sanitize_key( $post_data['qr_country'] ?? 'AR' );
+		$merchant_name  = sanitize_text_field( $post_data['qr_merchant_name'] ?? '' );
+		$merchant_city  = sanitize_text_field( $post_data['qr_merchant_city'] ?? '' );
+		$psp_id         = sanitize_text_field( $post_data['qr_psp_id'] ?? '' );
 
 		update_option( 'spg_qr_alias_subtotal', $alias_subtotal );
 		update_option( 'spg_qr_alias_shipping', $alias_shipping );
 		update_option( 'spg_qr_country', strtoupper( $country ) );
+		update_option( 'spg_qr_merchant_name', $merchant_name );
+		update_option( 'spg_qr_merchant_city', $merchant_city );
+
+		if ( ! empty( $psp_id ) ) {
+			update_option( 'spg_qr_psp_id', $psp_id );
+		}
 
 		// Only update the webhook secret if a non-empty value is provided (avoid overwriting).
 		if ( ! empty( $webhook_secret ) ) {
@@ -411,6 +420,9 @@ class SPG_Admin_Settings {
 		$cbu_shipping    = sanitize_text_field( $post_data['qr_cbu_shipping'] ?? '' );
 		$holder_shipping = sanitize_text_field( $post_data['qr_holder_shipping'] ?? '' );
 		$webhook_secret  = sanitize_text_field( $post_data['qr_webhook_secret'] ?? '' );
+		$merchant_name   = sanitize_text_field( $post_data['qr_merchant_name'] ?? '' );
+		$merchant_city   = sanitize_text_field( $post_data['qr_merchant_city'] ?? '' );
+		$psp_id          = sanitize_text_field( $post_data['qr_psp_id'] ?? '' );
 
 		update_option( 'spg_qr_enabled', 'yes' === $enabled ? 'yes' : 'no' );
 		update_option( 'spg_qr_alias_subtotal', $alias_subtotal );
@@ -419,6 +431,12 @@ class SPG_Admin_Settings {
 		update_option( 'spg_qr_alias_shipping', $alias_shipping );
 		update_option( 'spg_qr_cbu_shipping', $cbu_shipping );
 		update_option( 'spg_qr_holder_shipping', $holder_shipping );
+		update_option( 'spg_qr_merchant_name', $merchant_name );
+		update_option( 'spg_qr_merchant_city', $merchant_city );
+
+		if ( ! empty( $psp_id ) ) {
+			update_option( 'spg_qr_psp_id', $psp_id );
+		}
 
 		if ( ! empty( $webhook_secret ) ) {
 			update_option( 'spg_qr_webhook_secret', $webhook_secret );
@@ -512,6 +530,9 @@ class SPG_Admin_Settings {
 			'qr_alias_shipping' => get_option( 'spg_qr_alias_shipping', '' ),
 			'qr_webhook_secret' => get_option( 'spg_qr_webhook_secret', '' ) ? '••••••••' : '',
 			'qr_country'        => get_option( 'spg_qr_country', 'AR' ),
+			'qr_merchant_name'  => get_option( 'spg_qr_merchant_name', '' ),
+			'qr_merchant_city'  => get_option( 'spg_qr_merchant_city', '' ),
+			'qr_psp_id'         => get_option( 'spg_qr_psp_id', '00000031' ),
 		);
 	}
 
@@ -545,6 +566,9 @@ class SPG_Admin_Settings {
 			'cbu_shipping'    => get_option( 'spg_qr_cbu_shipping', '' ),
 			'holder_shipping' => get_option( 'spg_qr_holder_shipping', '' ),
 			'webhook_secret'  => get_option( 'spg_qr_webhook_secret', '' ) ? '••••••••' : '',
+			'merchant_name'   => get_option( 'spg_qr_merchant_name', '' ),
+			'merchant_city'   => get_option( 'spg_qr_merchant_city', '' ),
+			'psp_id'          => get_option( 'spg_qr_psp_id', '00000031' ),
 		);
 	}
 }

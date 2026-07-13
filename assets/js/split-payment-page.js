@@ -258,8 +258,8 @@
             html += '</div>';
         }
 
-        // Transfer details.
-        if ( qrData ) {
+        // Transfer details – only available for legacy JSON format (not CBI string).
+        if ( qrData && typeof qrData === 'object' ) {
             html += '<div class="spg-qr-detail">';
             if ( qrData.alias ) {
                 html += '<div class="spg-qr-detail-row">';

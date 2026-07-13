@@ -441,13 +441,13 @@ class SPG_Rest_Api {
 				$qr_record = $adapter->get_qr_record( $existing_hash );
 
 				if ( $qr_record && 'pending' === $qr_record['status'] && strtotime( $qr_record['expires_at'] ) > time() ) {
-					$qr_data = json_decode( $qr_record['qr_payload'], true );
+					$qr_data = $this->decode_qr_payload( $qr_record['qr_payload'] );
 					// Return existing valid QR with server-generated image.
 					return rest_ensure_response(
 						array(
 							'success'    => true,
 							'qr_data'    => $qr_data,
-							'qr_image'   => $qr_data ? $this->generate_qr_image( $qr_data ) : '',
+							'qr_image'   => ! empty( $qr_data ) ? $this->generate_qr_image( $qr_data ) : '',
 							'expires_at' => strtotime( $qr_record['expires_at'] ),
 							'status'     => 'pending',
 						)
@@ -478,7 +478,7 @@ class SPG_Rest_Api {
 				array(
 					'success'    => true,
 					'qr_data'    => $qr_data,
-					'qr_image'   => $qr_data ? $this->generate_qr_image( $qr_data ) : '',
+					'qr_image'   => ! empty( $qr_data ) ? $this->generate_qr_image( $qr_data ) : '',
 					'expires_at' => $expires_at,
 					'status'     => 'pending',
 				)
@@ -763,7 +763,31 @@ class SPG_Rest_Api {
 	}
 
 	/**
-	 * Generate a server-side QR code image from a QR data array.
+	 * Decode a stored QR payload string into the appropriate data type.
+	 *
+	 * New CBI records store the TLV string directly in qr_payload.
+	 * Legacy records store JSON.  This method returns the TLV string as-is
+	 * or decodes the JSON into an array, preserving backward compatibility.
+	 *
+	 * @param string $qr_payload Raw value from the qr_payload DB column.
+	 * @return string|array CBI TLV string or legacy QR data array.
+	 */
+	private function decode_qr_payload( string $qr_payload ) {
+		$decoded = json_decode( $qr_payload, true );
+		if ( null !== $decoded && json_last_error() === JSON_ERROR_NONE ) {
+			// Legacy JSON format.
+			return $decoded;
+		}
+		// CBI TLV format: return the raw string for direct QR encoding.
+		return $qr_payload;
+	}
+
+	/**
+	 * Generate a server-side QR code image from a QR data payload.
+	 *
+	 * Accepts either:
+	 *   - A CBI TLV string (new Argentina standard), or
+	 *   - A legacy structured QR data array (encoded as JSON for QR).
 	 *
 	 * Uses an external QR generation service (qrserver.com) via server-side
 	 * HTTP request so the browser never contacts the external service directly.
@@ -772,11 +796,12 @@ class SPG_Rest_Api {
 	 * Falls back to an empty string (JS will show transfer details instead) when
 	 * the external service is unavailable.
 	 *
-	 * @param array $qr_data Structured QR payload built by the adapter.
+	 * @param string|array $qr_data CBI TLV string or legacy JSON array.
 	 * @return string Base64 data URI (data:image/png;base64,...) or empty string.
 	 */
-	private function generate_qr_image( array $qr_data ) {
-		$text      = wp_json_encode( $qr_data );
+	private function generate_qr_image( $qr_data ) {
+		// CBI: use the TLV string directly; legacy: encode array to JSON.
+		$text      = is_string( $qr_data ) ? $qr_data : wp_json_encode( $qr_data );
 		$cache_key = 'spg_qr_img_' . md5( $text );
 
 		$cached = get_transient( $cache_key );

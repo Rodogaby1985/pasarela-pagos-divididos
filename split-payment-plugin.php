@@ -94,6 +94,7 @@ final class Split_Payment_Gateway_Plugin {
 		require_once SPG_PLUGIN_DIR . 'includes/database/class-spg-migrations.php';
 
 		// Core adapters.
+		require_once SPG_PLUGIN_DIR . 'includes/class-spg-cbi-qr-generator.php';
 		require_once SPG_PLUGIN_DIR . 'includes/adapters/class-spg-base-adapter.php';
 		require_once SPG_PLUGIN_DIR . 'includes/adapters/class-spg-mercadopago-adapter.php';
 		require_once SPG_PLUGIN_DIR . 'includes/adapters/class-spg-nave-adapter.php';

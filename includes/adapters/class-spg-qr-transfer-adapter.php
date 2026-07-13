@@ -7,21 +7,14 @@
  * the gateway receives a confirmation webhook.
  *
  * Compatible with:
- *   - Argentina: CBU / CVU / Alias (Mercado Pago, MODO, Interoperable QR / CBI)
- *   - Chile: RUT + account / CuentaRUT
- *   - Generic: any configurable alias string
+ *   - Argentina: CBI (Código de Barras Interoperable) – BCRA Com. "A" 6506
+ *     Works with MercadoPago, MODO, BBVA, Santander, and all Argentine banks.
+ *   - Chile: RUT + account / CuentaRUT (legacy JSON format)
+ *   - Generic: any configurable alias string (legacy JSON format)
  *
- * QR data format (encoded as JSON → QR image):
- * {
- *   "v":       "1",          // schema version
- *   "alias":   "tienda.mp",  // bank alias or CBU/CVU
- *   "amount":  "100.00",     // decimal string
- *   "currency":"ARS",        // ISO-4217
- *   "concept": "Orden #123", // human-readable description
- *   "ref":     "123-total",  // internal order reference
- *   "exp":     1700000000,   // Unix timestamp expiry (15 min)
- *   "hash":    "sha256..."   // integrity hash
- * }
+ * For Argentina (country = 'AR'), the QR payload is a TLV-formatted CBI string
+ * that is natively understood by all Argentine banking apps.  For other countries
+ * the adapter falls back to the legacy custom JSON format.
  *
  * @package SplitPaymentGateway
  */
@@ -50,6 +43,10 @@ class SPG_QR_Transfer_Adapter extends SPG_Base_Adapter {
 	 * Instead of returning a redirect URL, this returns the QR payload
 	 * data so the frontend can render the QR image via JavaScript.
 	 *
+	 * For Argentina (country = 'AR') the payload is a CBI TLV string
+	 * (BCRA Com. "A" 6506) compatible with all Argentine banking apps.
+	 * For other countries a custom JSON payload is used.
+	 *
 	 * @param array $payload {
 	 *     @type string $order_id    Internal order reference (e.g. "123-shipping").
 	 *     @type float  $amount      Amount to request.
@@ -59,11 +56,12 @@ class SPG_QR_Transfer_Adapter extends SPG_Base_Adapter {
 	 *     @type array  $customer    Optional customer data.
 	 * }
 	 * @return array {
-	 *     @type string $redirect_url  Empty string (no redirect for QR).
-	 *     @type string $transaction_id SHA-256 hash used as transaction ID.
-	 *     @type string $payment_type  Always 'qr_transfer'.
-	 *     @type array  $qr_data       Structured QR payload to render client-side.
-	 *     @type int    $expires_at    Unix timestamp of QR expiry.
+	 *     @type string $redirect_url   Empty string (no redirect for QR).
+	 *     @type string $transaction_id HMAC-SHA256 hash used as transaction ID.
+	 *     @type string $payment_type   Always 'qr_transfer'.
+	 *     @type string $qr_data        CBI TLV string (AR) or JSON payload (other).
+	 *     @type string $qr_type        'cbi' for Argentina, 'json' otherwise.
+	 *     @type int    $expires_at     Unix timestamp of QR expiry.
 	 * }
 	 * @throws Exception When alias is not configured.
 	 */
@@ -74,8 +72,39 @@ class SPG_QR_Transfer_Adapter extends SPG_Base_Adapter {
 		$ref      = sanitize_text_field( $payload['order_id'] ?? '' );
 		$concept  = sanitize_text_field( $payload['description'] ?? "Payment {$ref}" );
 		$exp      = time() + self::EXPIRY_SECONDS;
+		$country  = strtoupper( $this->config['country'] ?? get_option( 'spg_qr_country', 'AR' ) );
 
-		// Build the raw QR data before hashing.
+		if ( 'AR' === $country ) {
+			// ── CBI format (Argentina) ─────────────────────────────────────
+			$merchant_name = sanitize_text_field( get_option( 'spg_qr_merchant_name', get_bloginfo( 'name' ) ) );
+			$merchant_city = sanitize_text_field( get_option( 'spg_qr_merchant_city', '' ) );
+			$psp_id        = sanitize_text_field( get_option( 'spg_qr_psp_id', SPG_CBI_QR_Generator::DEFAULT_PSP_ID ) );
+
+			$cbi_string = SPG_CBI_QR_Generator::generate(
+				$alias,
+				(float) $amount,
+				$merchant_name,
+				$merchant_city,
+				$country,
+				$psp_id
+			);
+
+			// Derive a unique transaction hash from the CBI payload + order ref.
+			$hash = hash_hmac( 'sha256', $cbi_string . $ref, $this->get_hash_secret() );
+
+			$this->store_qr_record( $ref, $cbi_string, $hash, (float) $amount, $currency, $concept, $exp, $alias );
+
+			return array(
+				'redirect_url'   => '',
+				'transaction_id' => $hash,
+				'payment_type'   => 'qr_transfer',
+				'qr_data'        => $cbi_string,
+				'qr_type'        => 'cbi',
+				'expires_at'     => $exp,
+			);
+		}
+
+		// ── Legacy JSON format (non-AR countries) ─────────────────────────
 		$raw = array(
 			'v'        => '1',
 			'alias'    => $alias,
@@ -86,19 +115,17 @@ class SPG_QR_Transfer_Adapter extends SPG_Base_Adapter {
 			'exp'      => $exp,
 		);
 
-		// Create integrity hash so the webhook receiver can verify the QR has not been tampered.
 		$hash        = $this->generate_qr_hash( $raw );
 		$raw['hash'] = $hash;
 
-		// Store the QR transfer record.
-		$this->store_qr_record( $ref, $raw );
+		$this->store_qr_record( $ref, wp_json_encode( $raw ), $hash, (float) $amount, $currency, $concept, $exp, $alias );
 
-		// The "transaction_id" for a QR transfer is the hash itself.
 		return array(
 			'redirect_url'   => '',
 			'transaction_id' => $hash,
 			'payment_type'   => 'qr_transfer',
 			'qr_data'        => $raw,
+			'qr_type'        => 'json',
 			'expires_at'     => $exp,
 		);
 	}
@@ -377,24 +404,30 @@ class SPG_QR_Transfer_Adapter extends SPG_Base_Adapter {
 	/**
 	 * Persist a new QR transfer record to the database.
 	 *
-	 * @param string $order_ref Internal order reference.
-	 * @param array  $qr_data   Full QR payload (including hash).
+	 * @param string $order_ref  Internal order reference.
+	 * @param string $qr_payload QR payload string (CBI TLV or JSON).
+	 * @param string $qr_hash    HMAC-SHA256 transaction hash (used as ID).
+	 * @param float  $amount     Transaction amount.
+	 * @param string $currency   ISO-4217 currency code.
+	 * @param string $concept    Payment description / concept.
+	 * @param int    $exp        Unix timestamp of QR expiry.
+	 * @param string $alias      Bank alias / CBU / CVU (for display).
 	 */
-	private function store_qr_record( $order_ref, array $qr_data ) {
+	private function store_qr_record( string $order_ref, string $qr_payload, string $qr_hash, float $amount, string $currency, string $concept, int $exp, string $alias = '' ) {
 		global $wpdb;
 
-		$expires_dt = gmdate( 'Y-m-d H:i:s', $qr_data['exp'] );
+		$expires_dt = gmdate( 'Y-m-d H:i:s', $exp );
 
 		$wpdb->insert(
 			$wpdb->prefix . 'spg_qr_transfers',
 			array(
 				'order_ref'  => sanitize_text_field( $order_ref ),
-				'alias'      => sanitize_text_field( $qr_data['alias'] ),
-				'amount'     => (float) $qr_data['amount'],
-				'currency'   => sanitize_text_field( $qr_data['currency'] ),
-				'concept'    => sanitize_text_field( $qr_data['concept'] ),
-				'qr_hash'    => sanitize_text_field( $qr_data['hash'] ),
-				'qr_payload' => wp_json_encode( $qr_data ),
+				'alias'      => sanitize_text_field( $alias ),
+				'amount'     => $amount,
+				'currency'   => sanitize_text_field( $currency ),
+				'concept'    => sanitize_text_field( $concept ),
+				'qr_hash'    => sanitize_text_field( $qr_hash ),
+				'qr_payload' => $qr_payload,
 				'status'     => 'pending',
 				'expires_at' => $expires_dt,
 				'created_at' => current_time( 'mysql', true ),

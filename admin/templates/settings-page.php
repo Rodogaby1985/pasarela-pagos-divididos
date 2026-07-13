@@ -202,6 +202,52 @@ defined( 'ABSPATH' ) || exit;
 			</tr>
 		</table>
 
+		<h3><?php esc_html_e( 'CBI Settings (Argentina)', 'split-payment-gateway' ); ?></h3>
+		<p class="description">
+			<?php esc_html_e( 'Required for CBI (Código de Barras Interoperable) QR codes, compatible with all Argentine banks and digital wallets (MercadoPago, MODO, BBVA, Santander, etc.).', 'split-payment-gateway' ); ?>
+		</p>
+
+		<table class="form-table">
+			<tr>
+				<th><label for="spg-qr-merchant-name"><?php esc_html_e( 'Merchant Name', 'split-payment-gateway' ); ?></label></th>
+				<td>
+					<input type="text" id="spg-qr-merchant-name" name="qr_merchant_name"
+						class="regular-text"
+						value="<?php echo esc_attr( $qr_settings['qr_merchant_name'] ?? '' ); ?>"
+						maxlength="25"
+						placeholder="<?php echo esc_attr( get_bloginfo( 'name' ) ); ?>">
+					<p class="description">
+						<?php esc_html_e( 'Store name as it appears to the customer in their banking app (max 25 characters). Defaults to the site name if empty.', 'split-payment-gateway' ); ?>
+					</p>
+				</td>
+			</tr>
+			<tr>
+				<th><label for="spg-qr-merchant-city"><?php esc_html_e( 'Merchant City', 'split-payment-gateway' ); ?></label></th>
+				<td>
+					<input type="text" id="spg-qr-merchant-city" name="qr_merchant_city"
+						class="regular-text"
+						value="<?php echo esc_attr( $qr_settings['qr_merchant_city'] ?? '' ); ?>"
+						maxlength="15"
+						placeholder="Buenos Aires">
+					<p class="description">
+						<?php esc_html_e( 'City of the merchant (max 15 characters). Required by the CBI standard.', 'split-payment-gateway' ); ?>
+					</p>
+				</td>
+			</tr>
+			<tr>
+				<th><label for="spg-qr-psp-id"><?php esc_html_e( 'PSP ID', 'split-payment-gateway' ); ?></label></th>
+				<td>
+					<input type="text" id="spg-qr-psp-id" name="qr_psp_id"
+						class="regular-text"
+						value="<?php echo esc_attr( $qr_settings['qr_psp_id'] ?? '00000031' ); ?>"
+						placeholder="00000031">
+					<p class="description">
+						<?php esc_html_e( 'Payment Service Provider identifier. Default "00000031" corresponds to Red Link. Only change this if your PSP provides a different ID.', 'split-payment-gateway' ); ?>
+					</p>
+				</td>
+			</tr>
+		</table>
+
 		<p>
 			<button class="button button-primary" id="spg-save-qr-settings">
 				<?php esc_html_e( 'Save QR Settings', 'split-payment-gateway' ); ?>
@@ -213,27 +259,20 @@ defined( 'ABSPATH' ) || exit;
 		<h3><?php esc_html_e( 'How it works', 'split-payment-gateway' ); ?></h3>
 		<ol>
 			<li><?php esc_html_e( 'Customer selects "QR Transfer" for a payment section at checkout.', 'split-payment-gateway' ); ?></li>
-			<li><?php esc_html_e( 'The plugin generates a QR code encoding the alias, amount, and a 15-minute timer.', 'split-payment-gateway' ); ?></li>
+			<li><?php esc_html_e( 'For Argentina: the plugin generates a CBI-standard QR (BCRA Com. "A" 6506) understood by all banking apps.', 'split-payment-gateway' ); ?></li>
 			<li><?php esc_html_e( 'Customer scans the QR with their banking app (e.g. Mercado Pago, MODO, bank app).', 'split-payment-gateway' ); ?></li>
 			<li><?php esc_html_e( 'After transfer, the bank or aggregator sends a webhook to confirm payment.', 'split-payment-gateway' ); ?></li>
 			<li><?php esc_html_e( 'The order is automatically confirmed when both payments are received.', 'split-payment-gateway' ); ?></li>
 		</ol>
 
-		<h3><?php esc_html_e( 'QR Data Format', 'split-payment-gateway' ); ?></h3>
+		<h3><?php esc_html_e( 'QR Data Format (Argentina – CBI)', 'split-payment-gateway' ); ?></h3>
 		<p class="description">
-			<?php esc_html_e( 'The QR encodes a JSON payload with the following fields:', 'split-payment-gateway' ); ?>
+			<?php esc_html_e( 'For Argentina, the QR encodes a CBI (Código de Barras Interoperable) TLV payload compatible with all Argentine banks (example with alias "mobapp.2", amount $100.00, merchant "Mi Tienda", city "La Plata"):', 'split-payment-gateway' ); ?>
 		</p>
-		<pre style="background:#f7f7f7;padding:12px;border:1px solid #ddd;border-radius:4px;">
-{
-	"v":       "1",            // schema version
-	"alias":   "tienda.mp",   // configured alias
-	"amount":  "100.00",
-	"currency":"ARS",
-	"concept": "Orden #123",
-	"ref":     "123-total",   // internal reference
-	"exp":     1700000000,    // expiry (Unix timestamp)
-	"hash":    "sha256..."    // HMAC-SHA256 integrity hash
-}</pre>
+		<pre style="background:#f7f7f7;padding:12px;border:1px solid #ddd;border-radius:4px;word-break:break-all;white-space:pre-wrap;">000201010212260905ALIAS0108mobapp.20208000000315409100.005802AR5909Mi Tienda6008La Plata6304XXXX</pre>
+		<p class="description">
+			<?php esc_html_e( 'Fields: 00=Format(01) · 01=Initiation(12) · 26=Merchant Account · 54=Amount · 58=Country(AR) · 59=Merchant Name · 60=City · 63=CRC16', 'split-payment-gateway' ); ?>
+		</p>
 	</div><!-- /tab-qr -->
 
 	<!-- Tab: Split Rules -->
