@@ -107,17 +107,19 @@ class Test_QR_Transfer_Adapter extends TestCase {
 			)
 		);
 
-		$this->expectException( Exception::class );
-		$this->expectExceptionMessage( 'Merchant city is not configured' );
-
-		$adapter->initiate(
-			array(
-				'order_id'    => 'order-43-total',
-				'amount'      => 100.00,
-				'currency'    => 'ARS',
-				'description' => 'Orden 43',
-			)
-		);
+		try {
+			$adapter->initiate(
+				array(
+					'order_id'    => 'order-43-total',
+					'amount'      => 100.00,
+					'currency'    => 'ARS',
+					'description' => 'Orden 43',
+				)
+			);
+			$this->fail( 'Expected merchant city validation exception was not thrown.' );
+		} catch ( Exception $e ) {
+			$this->assertStringContainsString( 'Merchant city is not configured', $e->getMessage() );
+		}
 	}
 
 	public function test_initiate_keeps_legacy_json_for_non_argentina(): void {

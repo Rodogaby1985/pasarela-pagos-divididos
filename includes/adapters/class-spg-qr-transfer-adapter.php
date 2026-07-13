@@ -81,7 +81,7 @@ class SPG_QR_Transfer_Adapter extends SPG_Base_Adapter {
 			$psp_id        = sanitize_text_field( get_option( 'spg_qr_psp_id', SPG_CBI_QR_Generator::DEFAULT_PSP_ID ) );
 
 			if ( empty( $merchant_city ) ) {
-				throw new Exception( __( 'QR Transfer: Merchant city is not configured. Set it in WooCommerce → Settings → Split Payment Gateway → QR Transfer.', 'split-payment-gateway' ) );
+				throw new Exception( __( 'QR Transfer: Merchant city is not configured. Set it in the QR Transfer settings before generating Argentine CBI codes.', 'split-payment-gateway' ) );
 			}
 
 			$cbi_string = SPG_CBI_QR_Generator::generate(
