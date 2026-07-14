@@ -76,7 +76,7 @@ class SPG_CBI_QR_Generator {
 
 		// Build the main TLV payload (CRC placeholder added last).
 		$payload  = self::tlv( '00', '01' );                   // Payload Format Indicator (always "01").
-		$payload .= self::tlv( '01', '12' );                   // Point of Initiation (12 = dynamic per-transaction).
+		$payload .= self::tlv( '01', '11' );                   // Point of Initiation (11 = dynamic per-transaction).
 		$payload .= self::tlv( '26', $inner );                 // Merchant Account Info (CBI).
 		$payload .= self::tlv( '54', $amount_str );            // Transaction Amount.
 		$payload .= self::tlv( '58', strtoupper( $country ) ); // Country Code.
